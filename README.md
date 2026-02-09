@@ -41,4 +41,5 @@ This visualization tool was developed with the assistance of Artificial Intellig
 Run the simulation script:
 
 ```bash
-python robot_sim.py
+
+python ik_visual.py
