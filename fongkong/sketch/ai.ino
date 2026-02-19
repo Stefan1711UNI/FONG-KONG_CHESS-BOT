@@ -16,7 +16,7 @@ using namespace chessbot;
 /// @param board current chess board state
 /// @param result output buffer (at least 5 chars) to store the move string
 /// @param side 0 for white, 1 for black
-
+//k
 long  N, T;                  /* N=evaluated positions+S, T=recursion limit */
 short Q, O, K, R, k=16;      /* k=moving side */
 char *p, c[5], Z;            /* p=pointer to c, c=user input, computer output, Z=recursion counter */
