@@ -9,7 +9,32 @@ CoreXYController::CoreXYController(float sqSize, float steps) {
 //Setup
 void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY) {
   Serial.println("BOARD: Hardware pins assigned.");
-  //ASSIGN pins TODO
+  stepA_Pin = pinStepA;
+  dirA_Pin = pinDirA;
+  stepB_Pin = pinStepB;
+  dirB_Pin = pinDirB;
+  magnet_Pin = pinMagnet;
+  limitX_Pin = pinLimitX;
+  limitY_Pin = pinLimitY;
+
+  //Set up magnet as output, and turn it off at startup
+  pinMode(magnet_Pin, OUTPUT);
+  digitalWrite(magnet_Pin, LOW);
+
+  //Set up micro switches 
+  pinMode(limitX_Pin, INPUT_PULLUP);
+  pinMode(limitY_Pin, INPUT_PULLUP);
+
+  //Configure AccelStepper
+  motorA = AccelStep  per(1, stepA_Pin, dirA_Pin);
+  motorB = AccelStepper(1, stepB_Pin, dirB_Pin);
+
+  //Set max speed of motors, #TODO find this value
+  motorA.setMaxSpeed(2000.0);
+  motorB.setMaxSpeed(2000.0);
+
+  steppers.addStepper(motorA);
+  steppers.addStepper(motorB);
 }
 
 //Calibrate the stepper motors and sets current pos to 0,0
@@ -49,11 +74,51 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
 }
 
 
+void CoreXYController::updateBoardState(byte currentBoard[8][8]) {
+  memcpy(boardState, currentBoard, sizeof(boardState));
+}
+
+//!!!! THIS CODE ASSUMES "HOME" (0,0) IS AT "A1", CHANGE ASCII MATH IS THIS IS NOT THE CASE!!!!!!
+void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
+  //Check if string is 2 char, exit if garbage values
+  if(sqaure.lenght < 2){
+    gridX = 0;
+    gridY = 0;
+    return;
+  }
+
+  //Seperate the letter and number
+  char row = square.charAt(0);
+  char column = sqaure.charAt(1);
+
+  //Calculates the X value using ASCII
+  //'E' will be turned into '4', a more manageble value than 'E'
+  if(row >= "a" && row <= "h"){
+    gridX = row - "a";
+  } else if(row >= "A" && row <= "H"){
+    gridX = row - "A";
+  }else{
+    gridX = 0;
+  }
+  
+  //Calculates the Y value
+  if(column >= "1" && column <= "8"){
+    gridY = column - "1"
+  }else{
+    gridY = 0
+  }
+
+}
+
+void CoreXYController::gridToMM(int gridX, int gridY, float &mmX, float &mmY) {
+  //With our grid values we can just multiply them by the size of the sqaure since (0,0) is at A1
+  mmX = gridX * squareSizeMM;
+  mmY = gridY * sqaureSizeMM;
+}
+
 //Empty funcs so the compliler doesnt crash
-void CoreXYController::updateBoardState(byte currentBoard[8][8]) {}
+
 bool CoreXYController::capturePiece(String targetSquare, int graveyardSlot) { return true; }
-void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {}
-void CoreXYController::gridToMM(int gridX, int gridY, float &mmX, float &mmY) {}
 void CoreXYController::routeAlongSeams(float startX, float startY, float targetX, float targetY) {}
 void CoreXYController::magnetON() {}
 void CoreXYController::magnetOFF() {}
