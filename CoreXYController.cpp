@@ -26,7 +26,7 @@ void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDir
   pinMode(limitY_Pin, INPUT_PULLUP);
 
   //Configure AccelStepper
-  motorA = AccelStep  per(1, stepA_Pin, dirA_Pin);
+  motorA = AccelStepper(1, stepA_Pin, dirA_Pin);
   motorB = AccelStepper(1, stepB_Pin, dirB_Pin);
 
   //Set max speed of motors, #TODO find this value
@@ -81,7 +81,7 @@ void CoreXYController::updateBoardState(byte currentBoard[8][8]) {
 //!!!! THIS CODE ASSUMES "HOME" (0,0) IS AT "A1", CHANGE ASCII MATH IS THIS IS NOT THE CASE!!!!!!
 void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
   //Check if string is 2 char, exit if garbage values
-  if(sqaure.lenght < 2){
+  if(square.length() < 2){
     gridX = 0;
     gridY = 0;
     return;
@@ -89,36 +89,39 @@ void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
 
   //Seperate the letter and number
   char row = square.charAt(0);
-  char column = sqaure.charAt(1);
+  char column = square.charAt(1);
 
   //Calculates the X value using ASCII
   //'E' will be turned into '4', a more manageble value than 'E'
-  if(row >= "a" && row <= "h"){
-    gridX = row - "a";
-  } else if(row >= "A" && row <= "H"){
-    gridX = row - "A";
+  if(row >= 'a' && row <= 'h'){
+    gridX = row - 'a';
+  } else if(row >= 'A' && row <= 'H'){
+    gridX = row - 'A';
   }else{
     gridX = 0;
   }
   
   //Calculates the Y value
-  if(column >= "1" && column <= "8"){
-    gridY = column - "1"
+  if(column >= '1' && column <= '8'){
+    gridY = column - '1';
   }else{
-    gridY = 0
+    gridY = 0;
   }
 
 }
 
 void CoreXYController::gridToMM(int gridX, int gridY, float &mmX, float &mmY) {
-  //With our grid values we can just multiply them by the size of the sqaure since (0,0) is at A1
+  //With our grid values we can just multiply them by the size of the square since (0,0) is at A1
   mmX = gridX * squareSizeMM;
-  mmY = gridY * sqaureSizeMM;
+  mmY = gridY * squareSizeMM;
 }
+
+void CoreXYController::magnetON() {
+  
+}
+void CoreXYController::magnetOFF() {}
 
 //Empty funcs so the compliler doesnt crash
 
 bool CoreXYController::capturePiece(String targetSquare, int graveyardSlot) { return true; }
 void CoreXYController::routeAlongSeams(float startX, float startY, float targetX, float targetY) {}
-void CoreXYController::magnetON() {}
-void CoreXYController::magnetOFF() {}
