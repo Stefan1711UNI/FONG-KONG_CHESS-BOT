@@ -18,9 +18,12 @@ class CoreXYController {
     //Call when moving a single piece
     bool movePiece(String startSquare, String endSquare);
 
+    bool moveKnightPiece(String startSquare, String endSquare);
+
     //Call when capturing a piece
     bool capturePiece(String targetSquare, int graveyardSlot);
 
+    String mmToAlgebraic(float mmX, float mmY);
   
   private:
     AccelStepper motorA;

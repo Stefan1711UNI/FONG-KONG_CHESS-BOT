@@ -47,9 +47,184 @@ void CoreXYController::calibrate() {
 
 //Move Piece, returns TRUE when action completed
 bool CoreXYController::movePiece(String startSquare, String endSquare) {
-  //TODO
-  Serial.println("BOARD: Move complete.");
+  Serial.print("BOARD: Initiating move from ");
+  Serial.print(startSquare);
+  Serial.print(" to ");
+  Serial.println(endSquare);
+  //Grid coords
+  int startGridX, startGridY;
+  int endGridX, endGridY;
+  //Actual mm coords
+  float startMM_X, startMM_Y;
+  float endMM_X, endMM_Y;
+  //Convert string to grid
+  parseSquare(startSquare, startGridX, startGridY);
+  parseSquare(endSquare, endGridX, endGridY);
+  //Convert grid to mm coords
+  gridToMM(startGridX, startGridY, startMM_X, startMM_Y);
+  gridToMM(endGridX, endGridY, endMM_X, endMM_Y);
+
+  //---Move end effector to start position---
+  Serial.println("BOARD: Moving to start position...");
+  //Turn magnet off
+  magnetOFF();
+  //Move to mm coords of the start position
+  executeCoreXYMovement(startMM_X, startMM_Y);
+
+  //---COLLISION CHECK---
+  Serial.println("BOARD: Analyzing path for collisions...");
+  bool pathClear = true;
+
+  int dx = endGridX - startGridX;
+  int dy = endGridY - startGridY;
+
+  //Raycast
+  // Normalize the direction to just -1, 0, or 1 
+  int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
+  int stepY = (dy == 0) ? 0 : (dy > 0 ? 1 : -1);
+  //We start the check by 1 grid ahead of the start square
+  int checkX = startGridX + stepX;
+  int checkY = startGridY + stepY;
+
+  //Now we check if every square in the path is clear
+  while (checkX != endGridX || checkY != endGridY) {
+    if (boardState[checkX][checkY] == 1) {
+      Serial.println("BOARD: Obstacle detected mid-path! Path blocked.");
+      pathClear = false;
+      break; // Stop looking
+    }
+    checkX += stepX;
+    checkY += stepY;
+  }
+
+  //Checks if the end square is actually clear
+  if (boardState[endGridX][endGridY] == 1) {
+    Serial.println("BOARD: ERROR - Target square is occupied!");
+    pathClear = false;
+  }
+
+  //---MOVE THE PIECE---
+  Serial.println("BOARD: Magnet ON.");
+  magnetON();
+  delay(200); //Allow the magnet to fully engage
+
+  //If the path is clear we can move to the end square, if its not clear we must run "routeAlongSeams"
+  if (pathClear == true) {
+    Serial.println("BOARD: Path clear. Executing direct (straight) move.");
+    executeCoreXYMovement(endMM_X, endMM_Y);
+  } else {
+    Serial.println("BOARD: Path blocked. Routing along physical seams.");
+    routeAlongSeams(startMM_X, startMM_Y, endMM_X, endMM_Y);
+  }
+
+  //---MOVE FINISHED---
+  Serial.println("BOARD: Magnet OFF..");
+  magnetOFF();
+  delay(200);
+
+  Serial.println("BOARD: Piece delivered to target square.");
   return true; 
+}
+
+
+bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
+  Serial.print("BOARD: Initiating KNIGHT move from ");
+  Serial.print(startSquare);
+  Serial.print(" to ");
+  Serial.println(endSquare);
+
+  //Grid coords
+  int startGridX, startGridY, endGridX, endGridY;
+  //Actual mm coords
+  float startMM_X, startMM_Y, endMM_X, endMM_Y;
+
+  //Convert string to grid
+  parseSquare(startSquare, startGridX, startGridY);
+  parseSquare(endSquare, endGridX, endGridY);
+  //Convert grid to mm coords
+  gridToMM(startGridX, startGridY, startMM_X, startMM_Y);
+  gridToMM(endGridX, endGridY, endMM_X, endMM_Y);
+
+  //---Move end effector to start position---
+  //Turn magnet off
+  magnetOFF(); 
+  //Move to mm coords of the start position
+  executeCoreXYMovement(startMM_X, startMM_Y);
+  magnetON();
+  delay(200); //Allow the magnet to fully engage
+
+  //---CALCULATE THE PIVOTS---
+  //A Knight cannot move in a straight diagonal line from the start to the end square, without clipping other pieces.
+  //It must move in a 2-part "L" shape. This section calculates the two possible
+  //intermediate "corner" squares (pivots) the Knight can step on to complete the move.
+
+  //Find the total grid distance to move in X and Y
+  int dx = endGridX - startGridX;
+  int dy = endGridY - startGridY;
+  
+  //Determine the 1-square step direction (+1 or -1) for both axes
+  int stepX = (dx > 0) ? 1 : -1;
+  int stepY = (dy > 0) ? 1 : -1;
+
+  //Calculate Pivot 1: Moving 1 square diagonally first
+  int pivot1_X = startGridX + stepX;
+  int pivot1_Y = startGridY + stepY;
+
+  //Calculate Pivot 2: Moving 1 square orthogonally (straight) first
+  int pivot2_X = startGridX;
+  int pivot2_Y = startGridY;
+  
+  //Determine which axis the Knight moves 2 squares along (the long axis)
+  if (abs(dx) > abs(dy)) {
+    //X is the long axis, apply the step to X
+    pivot2_X = startGridX + stepX;
+  } else {
+    //Y is the long axis, apply the step to Y
+    pivot2_Y = startGridY + stepY;
+  }
+
+  //---COLLISION CHECK---
+  //We check the board memory to see if either of the calculated L-shape paths are empty.
+  //If both pivots are blocked by other pieces, the Knight is boxed in and we must 
+  //fallback to the slower method of safely dragging the piece between the gridlines.
+  
+  float pivotMM_X, pivotMM_Y;
+
+  //Tier 1: Check if Pivot 1 and the final target square are both empty
+  if (boardState[pivot1_X][pivot1_Y] == 0 && boardState[endGridX][endGridY] == 0) {
+    Serial.println("BOARD: Knight Path 1 (Diagonal First) is clear.");
+    //Convert pivot grid to mm coords
+    gridToMM(pivot1_X, pivot1_Y, pivotMM_X, pivotMM_Y);
+    
+    //Execute the staircase move: drive to the pivot, then to the end position
+    executeCoreXYMovement(pivotMM_X, pivotMM_Y);
+    executeCoreXYMovement(endMM_X, endMM_Y);
+  } 
+  
+  //Tier 2: Check if Pivot 2 and the final target square are both empty
+  else if (boardState[pivot2_X][pivot2_Y] == 0 && boardState[endGridX][endGridY] == 0) {
+    Serial.println("BOARD: Knight Path 2 (Orthogonal First) is clear.");
+    //Convert pivot grid to mm coords
+    gridToMM(pivot2_X, pivot2_Y, pivotMM_X, pivotMM_Y);
+    
+    //Execute the staircase move: drive to the pivot, then to the end position
+    executeCoreXYMovement(pivotMM_X, pivotMM_Y);
+    executeCoreXYMovement(endMM_X, endMM_Y);
+  } 
+  
+  //Tier 3: Fallback if both intermediate pivot squares are blocked by pieces
+  else {
+    Serial.println("BOARD: Knight is boxed in. Routing along seams.");
+    routeAlongSeams(startMM_X, startMM_Y, endMM_X, endMM_Y);
+  }
+
+  //---MOVE FINISHED---
+  //Turn magnet off
+  magnetOFF();
+  delay(200);
+
+  Serial.println("BOARD: Knight move complete.");
+  return true;
 }
 
 //Executes the CoreXY movement
@@ -57,17 +232,31 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
   //Calculate coreXY target mm
   float motorA_mm = targetX + targetY;
   float motorB_mm = targetX - targetY;
+
   //Convert mm to steps for motor
   long targetStepsA = round(motorA_mm * stepsPerMM);
   long targetStepsB = round(motorB_mm * stepsPerMM);
+
   //Put into array for multiStepper
   long positions[2];
   positions[0] = targetStepsA; // Motor A
-  positions[1] = targetStepsB; // Motor 
+  positions[1] = targetStepsB; // Motor B
+
+  //DEBUGING
+  Serial.print("   -> Driving Motors to: [");
+  Serial.print(mmToAlgebraic(targetX, targetY));
+  Serial.print("]  (X=");
+  Serial.print(targetX);
+  Serial.print("mm, Y=");
+  Serial.print(targetY);
+  Serial.println("mm)");
+
   //Call motors
   steppers.moveTo(positions);
+
   //Execute the move (BLOCKING)
   steppers.runSpeedToPosition();
+
   //Update new current position
   currentX = targetX;
   currentY = targetY;
@@ -78,7 +267,7 @@ void CoreXYController::updateBoardState(byte currentBoard[8][8]) {
   memcpy(boardState, currentBoard, sizeof(boardState));
 }
 
-//!!!! THIS CODE ASSUMES "HOME" (0,0) IS AT "A1", CHANGE ASCII MATH IS THIS IS NOT THE CASE!!!!!!
+//!!!! THIS CODE ASSUMES "HOME" (0,0) IS AT "A1", CHANGE ASCII MATH IF THIS IS NOT THE CASE!!!!!!
 void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
   //Check if string is 2 char, exit if garbage values
   if(square.length() < 2){
@@ -87,23 +276,23 @@ void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
     return;
   }
 
-  //Seperate the letter and number
-  char row = square.charAt(0);
-  char column = square.charAt(1);
+  //Separate the letter and number
+  char file = square.charAt(0);  //Letter (Column on the board)
+  char rank = square.charAt(1); //Number (Row on the board)
 
   //Calculates the X value using ASCII
   //'E' will be turned into '4', a more manageble value than 'E'
-  if(row >= 'a' && row <= 'h'){
-    gridX = row - 'a';
-  } else if(row >= 'A' && row <= 'H'){
-    gridX = row - 'A';
+  if(file >= 'a' && file <= 'h'){
+    gridX = file - 'a';
+  } else if(file >= 'A' && file <= 'H'){
+    gridX = file - 'A';
   }else{
     gridX = 0;
   }
   
   //Calculates the Y value
-  if(column >= '1' && column <= '8'){
-    gridY = column - '1';
+  if(rank >= '1' && rank <= '8'){
+    gridY = rank - '1';
   }else{
     gridY = 0;
   }
@@ -117,11 +306,28 @@ void CoreXYController::gridToMM(int gridX, int gridY, float &mmX, float &mmY) {
 }
 
 void CoreXYController::magnetON() {
-  
+  digitalWrite(magnet_Pin, HIGH);
 }
-void CoreXYController::magnetOFF() {}
+void CoreXYController::magnetOFF() {
+  digitalWrite(magnet_Pin, LOW);
+}
+
+
+//DEBUG TESTING TEMP 
+String CoreXYController::mmToAlgebraic(float mmX, float mmY) {
+  int gridX = round(mmX / squareSizeMM);
+  int gridY = round(mmY / squareSizeMM);
+  
+  char file = 'a' + gridX;
+  char rank = '1' + gridY;
+  
+  String square = "";
+  square += file;
+  square += rank;
+  return square;
+}
+
 
 //Empty funcs so the compliler doesnt crash
-
 bool CoreXYController::capturePiece(String targetSquare, int graveyardSlot) { return true; }
 void CoreXYController::routeAlongSeams(float startX, float startY, float targetX, float targetY) {}
