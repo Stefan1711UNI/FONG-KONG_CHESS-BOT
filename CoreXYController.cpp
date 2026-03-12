@@ -7,7 +7,7 @@ CoreXYController::CoreXYController(float sqSize, float steps) {
 }
 
 //Setup
-void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY) {
+void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable) {
   Serial.println("BOARD: Hardware pins assigned.");
   stepA_Pin = pinStepA;
   dirA_Pin = pinDirA;
@@ -16,6 +16,7 @@ void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDir
   magnet_Pin = pinMagnet;
   limitX_Pin = pinLimitX;
   limitY_Pin = pinLimitY;
+  enable_Pin = pinEnable;   //Disables/Enables motors
 
   //Set up magnet as output, and turn it off at startup
   pinMode(magnet_Pin, OUTPUT);
@@ -24,6 +25,10 @@ void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDir
   //Set up micro switches 
   pinMode(limitX_Pin, INPUT_PULLUP);
   pinMode(limitY_Pin, INPUT_PULLUP);
+
+  //Set up enable pin and turn off motors, HIGH = OFF
+  pinMode(enable_Pin, OUTPUT);
+  disableMotors();
 
   //Configure AccelStepper
   motorA = AccelStepper(1, stepA_Pin, dirA_Pin);
@@ -66,6 +71,8 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
 
   //---Move end effector to start position---
   Serial.println("BOARD: Moving to start position...");
+  //Turns motor on
+  enableMotors();
   //Turn magnet off
   magnetOFF();
   //Move to mm coords of the start position
@@ -122,6 +129,9 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   magnetOFF();
   delay(200);
 
+  //Turn motors OFF to save power
+  disableMotors();
+
   Serial.println("BOARD: Piece delivered to target square.");
   return true; 
 }
@@ -146,6 +156,8 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   gridToMM(endGridX, endGridY, endMM_X, endMM_Y);
 
   //---Move end effector to start position---
+  //Turns motor on
+  enableMotors();
   //Turn magnet off
   magnetOFF(); 
   //Move to mm coords of the start position
@@ -222,6 +234,9 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   //Turn magnet off
   magnetOFF();
   delay(200);
+
+  //Turn motors OFF to save power
+  disableMotors();
 
   Serial.println("BOARD: Knight move complete.");
   return true;
@@ -325,6 +340,17 @@ String CoreXYController::mmToAlgebraic(float mmX, float mmY) {
   square += file;
   square += rank;
   return square;
+}
+
+//Powers the stepper coils, LOW = ON
+void CoreXYController::enableMotors() {
+  digitalWrite(enable_Pin, LOW);
+  delay(50); //Allow time to power the motor
+}
+
+//Cuts power to the stepper coils, HIGH = OFF
+void CoreXYController::disableMotors() {
+  digitalWrite(enable_Pin, HIGH);
 }
 
 

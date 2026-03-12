@@ -4,10 +4,10 @@
 
 class CoreXYController {
   public:
-    //Sets up the board paramaters, constructor
+    //Constructor
     CoreXYController(float squareSize, float stepsPerMM);
 
-    void setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY);
+    void setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable);
 
     //Calibrate the stepper motors
     void calibrate();
@@ -15,9 +15,10 @@ class CoreXYController {
     //Updates the 8x8 piece map
     void updateBoardState(byte currentBoard[8][8]);
 
-    //Call when moving a single piece
+    //Call when moving a single piece, excl. Knights
     bool movePiece(String startSquare, String endSquare);
 
+    //Call when moving a knight
     bool moveKnightPiece(String startSquare, String endSquare);
 
     //Call when capturing a piece
@@ -44,6 +45,7 @@ class CoreXYController {
     int stepB_Pin, dirB_Pin;
     int magnet_Pin;
     int limitX_Pin, limitY_Pin;
+    int enable_Pin;
 
     //HELPER FUNCTIONS
 
@@ -62,5 +64,9 @@ class CoreXYController {
     //Magnet Control
     void magnetON();
     void magnetOFF();
+
+    //Disables/Enables motor for power saving
+    void enableMotors();
+    void disableMotors();
 
 };
