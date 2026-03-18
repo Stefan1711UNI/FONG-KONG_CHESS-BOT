@@ -51,7 +51,7 @@ void pieceCaptured() {
     delay(1500);
 }
 
-void setup() {
+void lcdSetup() {
     pinMode(buttonTurn, INPUT_PULLUP);
     pinMode(buttonCapture, INPUT_PULLUP);
     pinMode(buttonPower, INPUT_PULLUP);
@@ -65,33 +65,33 @@ void setup() {
     showTurn(playerTurn);
 }
 
-void loop() {
+// void loop() {
 
-    if (digitalRead(buttonPower) == LOW) {
-        systemOn = !systemOn;
+//     if (digitalRead(buttonPower) == LOW) {
+//         systemOn = !systemOn;
 
-        if (systemOn) {
-            powerOnScreen();
-            gameStartScreen();
-            showTurn(playerTurn);
-        } else {
-            powerOffScreen();
-        }
+//         if (systemOn) {
+//             powerOnScreen();
+//             gameStartScreen();
+//             showTurn(playerTurn);
+//         } else {
+//             powerOffScreen();
+//         }
 
-        delay(400);
-    }
+//         delay(400);
+//     }
 
-    if (!systemOn) return;
+//     if (!systemOn) return;
 
-    if (digitalRead(buttonTurn) == LOW) {
-        playerTurn = !playerTurn;
-        showTurn(playerTurn);
-        delay(300);
-    }
+//     if (digitalRead(buttonTurn) == LOW) {
+//         playerTurn = !playerTurn;
+//         showTurn(playerTurn);
+//         delay(300);
+//     }
 
-    if (digitalRead(buttonCapture) == LOW) {
-        pieceCaptured();
-        showTurn(playerTurn);
-        delay(300);
-    }
-}
+//     if (digitalRead(buttonCapture) == LOW) {
+//         pieceCaptured();
+//         showTurn(playerTurn);
+//         delay(300);
+//     }
+// }

@@ -154,23 +154,18 @@ void bkp() {
 }
 
 
-char translate_to_engine_bits(piece p) {
+char translate_to_engine_bits(piece* p) {
     // If piece_type is empty or a dot (common for empty squares)
-    if (p.piece_type[0] == '\0' || p.piece_type[0] == '.') return 0; [cite: 101]
     
     char type = 0;
-    char t = p.piece_type[0];
-    bool isLower = (t >= 'a' && t <= 'z');
-    char upperT = isLower ? (t - 32) : t; // Normalize to uppercase for switching
-
     // Engine mapping: P=1, N=2, K=3, B=4, R=5, Q=6 [cite: 6]
-    switch(upperT) {
-        case 'P': type = 1; break;
-        case 'N': type = 2; break;
-        case 'K': type = 3; break;
-        case 'B': type = 4; break;
-        case 'R': type = 5; break;
-        case 'Q': type = 6; break;
+    switch(p->piece_type) {
+        case pieceType::PAWN: type = 1; break;
+        case pieceType::KNIGHT: type = 2; break;
+        case pieceType::KING: type = 3; break;
+        case pieceType::BISHOP: type = 4; break;
+        case pieceType::ROOK: type = 5; break;
+        case pieceType::QUEEN: type = 6; break;
         default:  type = 0; break;
     }
 
@@ -178,11 +173,11 @@ char translate_to_engine_bits(piece p) {
 
     // Side bits: White (Uppercase) = 16, Black (Lowercase) = 8 [cite: 4, 101]
     // Note: Adjust the logic below if your 'side' param in get_ai_move handles color differently
-    return type | (isLower ? 8 : 16);
+    return type | (p->is_white ? 16 : 8);
 }
 
 
-static void get_ai_move(array<array<piece, 8>, 8> board, char* result, int side) {
+static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side) {
     // 1. Reset Engine Globals for a fresh search
     N = 0;             // Reset node count [cite: 16]
     Z = 0;             // Reset recursion depth [cite: 33]
