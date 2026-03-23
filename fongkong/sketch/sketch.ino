@@ -11,7 +11,7 @@ static chessbot::move translate_move_to_coordinates(const char* stringMove);
 static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side);
 piece* get_piece_at_coordinates(int x, int y);
 char* detect_player_move();
-static bool try_move_piece(int old_x, int old_y, int new_x, int new_y);
+static bool try_move_piece(char* from, char* to, std::array<std::array<piece*, 8>, 8>  board);
 void configure();
 void initBoard(std::array<std::array<piece*, 8>, 8> board);
 void showTurn(bool playerTurn);
@@ -67,7 +67,11 @@ void loop() {
 
         // update board state
         if (ai_valid) {
-            bool piece_moved = try_move_piece(ai_chessbot_move.from_x, ai_chessbot_move.from_y, ai_chessbot_move.to_x, ai_chessbot_move.to_y);
+            char from[2];
+            char to[2];
+            strncpy(from, ai_move, 2);
+            strncpy(to, ai_move + 2, 2);
+            bool piece_moved = try_move_piece(from,to, board);
             if (piece_moved) {
                 board[ai_chessbot_move.to_y][ai_chessbot_move.to_x] = ai_piece;
                 board[ai_chessbot_move.from_y][ai_chessbot_move.from_x] = nullptr;
