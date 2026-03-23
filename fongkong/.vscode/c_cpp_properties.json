@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/cores/arduino",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Arduino_LED_Matrix/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Arduino_RouterBridge/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Arduino_RPCLite/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Camera/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/ea_malloc",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Ethernet/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/SocketWrapper",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/SPI",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/WiFi/src",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Wire",
+                "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.51.0/libraries/Zephyr_SDRAM"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "F_CPU=16000000L",
+                "ARDUINO=10805",
+                "ARDUINO_AVR_UNO",
+                "ARDUINO_ARCH_AVR"
+            ],
+            "compilerPath": "/home/arduino/.arduino15/packages/zephyr/tools/arm-zephyr-eabi/0.16.8/bin/arm-zephyr-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
