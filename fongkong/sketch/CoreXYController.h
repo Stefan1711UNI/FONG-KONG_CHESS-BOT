@@ -7,7 +7,7 @@ class CoreXYController {
     //Constructor
     CoreXYController(float squareSize, float stepsPerMM);
 
-    void setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable);
+    void setUp(int pinStepX, int pinDirX, int pinStepY, int pinDirY, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable);
 
     //Calibrate the stepper motors
     void calibrate();
@@ -24,7 +24,9 @@ class CoreXYController {
     //Call when capturing a piece
     bool capturePiece(String targetSquare, int graveyardSlot);
 
+    ////Helper: Converts raw millimeters back to algebraic notation for debugging
     String mmToAlgebraic(float mmX, float mmY);
+
   
   private:
     AccelStepper motorA;
@@ -58,14 +60,14 @@ class CoreXYController {
     //The Pathfinder: Calculates waypoint routing to avoid collisions
     void routeAlongSeams(float startX, float startY, float targetX, float targetY);
 
-    //Executes the CoreXY movement
+    //Executes the CoreXY movement (Blocking)
     void executeCoreXYMovement(float targetX, float targetY);
 
     //Magnet Control
     void magnetON();
     void magnetOFF();
 
-    //Disables/Enables motor for power saving
+    //Disables/Enables motors for power saving
     void enableMotors();
     void disableMotors();
 

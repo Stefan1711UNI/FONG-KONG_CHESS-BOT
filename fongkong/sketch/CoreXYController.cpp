@@ -7,12 +7,12 @@ CoreXYController::CoreXYController(float sqSize, float steps) {
 }
 
 //Setup
-void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable) {
+void CoreXYController::setUp(int pinStepX, int pinDirX, int pinStepY, int pinDirY, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable) {
   Serial.println("BOARD: Hardware pins assigned.");
-  stepA_Pin = pinStepA;
-  dirA_Pin = pinDirA;
-  stepB_Pin = pinStepB;
-  dirB_Pin = pinDirB;
+  stepX_Pin = pinStepX; //X-axis
+  dirX_Pin = pinDirX;
+  stepY_Pin = pinStepY; //Y-axis
+  dirY_Pin = pinDirY;
   magnet_Pin = pinMagnet;
   limitX_Pin = pinLimitX;
   limitY_Pin = pinLimitY;
@@ -31,23 +31,98 @@ void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDir
   disableMotors();
 
   //Configure AccelStepper
-  motorA = AccelStepper(1, stepA_Pin, dirA_Pin);
-  motorB = AccelStepper(1, stepB_Pin, dirB_Pin);
+  motorX = AccelStepper(1, stepX_Pin, dirX_Pin);
+  motorY = AccelStepper(1, stepY_Pin, dirY_Pin);
 
-  //Set max speed of motors, #TODO find this value
-  motorA.setMaxSpeed(2000.0);
-  motorB.setMaxSpeed(2000.0);
+  //Set max speed of motors
+  motorX.setMaxSpeed(200.0);
+  motorY.setMaxSpeed(200.0);
 
-  steppers.addStepper(motorA);
-  steppers.addStepper(motorB);
+  motorX.setAcceleration(800.0); 
+  motorY.setAcceleration(800.0);
+
+  steppers.addStepper(motorX);
+  steppers.addStepper(motorY);
 }
 
 //Calibrate the stepper motors and sets current pos to 0,0
 void CoreXYController::calibrate() {
-  //LOGIC TODO
-  currentX = 0;
+  Serial.println("BOARD: Calibration starting:");
+
+  //--SETUP--
+  enableMotors();
+  float homingSpeed = 400.0;
+  
+  //Move X-axis motor
+  Serial.println("BOARD: Moving towards X limit switch...");
+  motorX.setSpeed(-homingSpeed); 
+
+  //Keeps moving untill limit switch is hit 
+  while (digitalRead(limitX_Pin) == HIGH) {
+    motorX.runSpeed();
+  }
+  
+  Serial.println("BOARD: X-axis switch HIT!");
+  motorX.setSpeed(0); //Stop the motor
+
+  //---BACK OFF X-AXIS---
+  Serial.println("BOARD: Backing off X switch...");
+  motorX.setCurrentPosition(0);
+  motorX.moveTo(100);  // Move off the switch
+  
+  while (motorX.distanceToGo() != 0) {
+    motorX.run();
+  }
+
+  //Home the Y-axis
+  Serial.println("BOARD: Moving towards Y limit switch...");
+  motorY.setSpeed(-homingSpeed);
+
+  //Keeps going untill the switch is hit
+  while (digitalRead(limitY_Pin) == HIGH) {
+    motorY.runSpeed();
+  }
+  
+  Serial.println("BOARD: Y-axis switch HIT!");
+  motorY.setSpeed(0);
+
+  //--- BACK OFF Y-AXIS---
+  Serial.println("BOARD: Backing off Y switch...");
+  motorY.setCurrentPosition(0);
+  motorY.moveTo(200);  // Move off the switch
+  while (motorY.distanceToGo() != 0) {
+    motorY.run();
+  }
+
+  //---Move to A1---
+  Serial.println("BOARD: Moving from switches to the center of Square A1...");
+
+  //---!!!THIS IS THE DISTANCE FROM THE LIMIT SWITCHES TO THE CENTER OF A1!!!---
+  float offsetA1_X_mm = 380.0; 
+  float offsetA1_Y_mm = 26.0; 
+
+  //Convert mm to steps
+  long offsetStepsX = round(offsetA1_X_mm * stepsPerMM);
+  long offsetStepsY = round(offsetA1_Y_mm * stepsPerMM);
+
+  //Command motors to move to A1
+  motorX.moveTo(offsetStepsX);
+  motorY.moveTo(offsetStepsY);
+
+  //Execute the move simultaneously
+  while (motorX.distanceToGo() != 0 || motorY.distanceToGo() != 0) {
+    motorX.run();
+    motorY.run();
+  }
+
+  //---SET HOME POSITION---
+  motorX.setCurrentPosition(0);
+  motorY.setCurrentPosition(0);
+  currentX = 0; 
   currentY = 0;
-  Serial.println("BOARD: Homing complete. At (0,0).");
+  
+  disableMotors();
+  Serial.println("BOARD: Homing complete. A1 is now Absolute (0,0)!");
 }
 
 //Move Piece, returns TRUE when action completed
@@ -56,12 +131,15 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   Serial.print(startSquare);
   Serial.print(" to ");
   Serial.println(endSquare);
+
   //Grid coords
   int startGridX, startGridY;
   int endGridX, endGridY;
+
   //Actual mm coords
   float startMM_X, startMM_Y;
   float endMM_X, endMM_Y;
+
   //Convert string to grid
   parseSquare(startSquare, startGridX, startGridY);
   parseSquare(endSquare, endGridX, endGridY);
@@ -71,9 +149,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
 
   //---Move end effector to start position---
   Serial.println("BOARD: Moving to start position...");
-  //Turns motor on
   enableMotors();
-  //Turn magnet off
   magnetOFF();
   //Move to mm coords of the start position
   executeCoreXYMovement(startMM_X, startMM_Y);
@@ -89,7 +165,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   // Normalize the direction to just -1, 0, or 1 
   int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
   int stepY = (dy == 0) ? 0 : (dy > 0 ? 1 : -1);
-  //We start the check by 1 grid ahead of the start square
+  //We start the check 1 grid ahead of the start square
   int checkX = startGridX + stepX;
   int checkY = startGridY + stepY;
 
@@ -104,7 +180,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
     checkY += stepY;
   }
 
-  //Checks if the end square is actually clear
+  //Checks if the end square is occupied 
   if (boardState[endGridX][endGridY] == 1) {
     Serial.println("BOARD: ERROR - Target square is occupied!");
     pathClear = false;
@@ -115,7 +191,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   magnetON();
   delay(200); //Allow the magnet to fully engage
 
-  //If the path is clear we can move to the end square, if its not clear we must run "routeAlongSeams"
+  //If the path is clear we can move to the end square, if not we must run "routeAlongSeams"
   if (pathClear == true) {
     Serial.println("BOARD: Path clear. Executing direct (straight) move.");
     executeCoreXYMovement(endMM_X, endMM_Y);
@@ -128,15 +204,13 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   Serial.println("BOARD: Magnet OFF..");
   magnetOFF();
   delay(200);
-
-  //Turn motors OFF to save power
   disableMotors();
 
   Serial.println("BOARD: Piece delivered to target square.");
   return true; 
 }
 
-
+//Move knight, L-shape pathing
 bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   Serial.print("BOARD: Initiating KNIGHT move from ");
   Serial.print(startSquare);
@@ -156,9 +230,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   gridToMM(endGridX, endGridY, endMM_X, endMM_Y);
 
   //---Move end effector to start position---
-  //Turns motor on
   enableMotors();
-  //Turn magnet off
   magnetOFF(); 
   //Move to mm coords of the start position
   executeCoreXYMovement(startMM_X, startMM_Y);
@@ -231,11 +303,8 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   }
 
   //---MOVE FINISHED---
-  //Turn magnet off
   magnetOFF();
   delay(200);
-
-  //Turn motors OFF to save power
   disableMotors();
 
   Serial.println("BOARD: Knight move complete.");
@@ -245,17 +314,17 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
 //Executes the CoreXY movement
 void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
   //Calculate coreXY target mm
-  float motorA_mm = targetX + targetY;
-  float motorB_mm = targetX - targetY;
+  float motorX_mm = targetX;
+  float motorY_mm = targetY;
 
   //Convert mm to steps for motor
-  long targetStepsA = round(motorA_mm * stepsPerMM);
-  long targetStepsB = round(motorB_mm * stepsPerMM);
+  long targetStepsA = round(motorX_mm * stepsPerMM);
+  long targetStepsB = round(motorY_mm * stepsPerMM);
 
   //Put into array for multiStepper
   long positions[2];
-  positions[0] = targetStepsA; // Motor A
-  positions[1] = targetStepsB; // Motor B
+  positions[0] = targetStepsA; // Motor X
+  positions[1] = targetStepsB; // Motor Y
 
   //DEBUGING
   Serial.print("   -> Driving Motors to: [");
@@ -268,7 +337,6 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
 
   //Call motors
   steppers.moveTo(positions);
-
   //Execute the move (BLOCKING)
   steppers.runSpeedToPosition();
 
@@ -282,7 +350,7 @@ void CoreXYController::updateBoardState(byte currentBoard[8][8]) {
   memcpy(boardState, currentBoard, sizeof(boardState));
 }
 
-//!!!! THIS CODE ASSUMES "HOME" (0,0) IS AT "A1", CHANGE ASCII MATH IF THIS IS NOT THE CASE!!!!!!
+//Translates algebraic notation to grid indices (Assumes Home 0,0 is A1)
 void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
   //Check if string is 2 char, exit if garbage values
   if(square.length() < 2){
@@ -314,21 +382,18 @@ void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
 
 }
 
+//Translates grid coordinates to raw physical millimeters
 void CoreXYController::gridToMM(int gridX, int gridY, float &mmX, float &mmY) {
-  //With our grid values we can just multiply them by the size of the square since (0,0) is at A1
-  mmX = gridX * squareSizeMM;
-  mmY = gridY * squareSizeMM;
+  //---AXIS INVERSION---
+  //Set to -1 since the motor drives away from the board, relative to the A1 limit switch
+  int xDirection = -1;
+  int yDirection = 1;
+
+  mmX = gridX * squareSizeMM * xDirection;
+  mmY = gridY * squareSizeMM * yDirection;
 }
 
-void CoreXYController::magnetON() {
-  digitalWrite(magnet_Pin, HIGH);
-}
-void CoreXYController::magnetOFF() {
-  digitalWrite(magnet_Pin, LOW);
-}
-
-
-//DEBUG TESTING TEMP 
+//Helper: Reconstructs Algebraic notation for Debugging
 String CoreXYController::mmToAlgebraic(float mmX, float mmY) {
   int gridX = round(mmX / squareSizeMM);
   int gridY = round(mmY / squareSizeMM);
@@ -340,6 +405,15 @@ String CoreXYController::mmToAlgebraic(float mmX, float mmY) {
   square += file;
   square += rank;
   return square;
+}
+
+//---HARDWARE CONTROL---
+
+void CoreXYController::magnetON() {
+  digitalWrite(magnet_Pin, LOW);  //Active Low
+}
+void CoreXYController::magnetOFF() {
+  digitalWrite(magnet_Pin, HIGH);
 }
 
 //Powers the stepper coils, LOW = ON
