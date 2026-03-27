@@ -1,19 +1,21 @@
 #include <AccelStepper.h>
 #include <MultiStepper.h>
+#include <array>
+#include "types.h"
 
 
 class CoreXYController {
   public:
     //Constructor
-    CoreXYController(float squareSize, float stepsPerMM);
+    CoreXYController(float squareSize, float stepsPerMM_X);
 
     void setUp(int pinStepX, int pinDirX, int pinStepY, int pinDirY, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable);
 
     //Calibrate the stepper motors
     void calibrate();
 
-    //Updates the 8x8 piece map
-    void updateBoardState(byte currentBoard[8][8]);
+    //Updates the array of pointers
+    void updateBoardState(std::array<std::array<chessbot::piece*, 8>, 8> currentBoard);
 
     //Call when moving a single piece, excl. Knights
     bool movePiece(String startSquare, String endSquare);
@@ -22,29 +24,31 @@ class CoreXYController {
     bool moveKnightPiece(String startSquare, String endSquare);
 
     //Call when capturing a piece
-    bool capturePiece(String targetSquare, int graveyardSlot);
+    bool capturePiece(String targetSquare);
 
     ////Helper: Converts raw millimeters back to algebraic notation for debugging
     String mmToAlgebraic(float mmX, float mmY);
 
   
   private:
-    AccelStepper motorA;
-    AccelStepper motorB;
+    AccelStepper motorX;
+    AccelStepper motorY;
     MultiStepper steppers;
 
     //Board State Memory
-    byte boardState[8][8];  //1 = piece present, 0 = empty
+    std::array<std::array<chessbot::piece*, 8>, 8> boardState;
+    
     float currentX;         //Curent X position mm 
     float currentY;         //Curent Y position mm
 
     //Physical Parameters
     float squareSizeMM;         //Size of square in mm
-    float stepsPerMM;           //How many steps to travel 1 mm
+    float stepsPerMM_X;           //How many steps to travel 1 mm
+    float stepsPerMM_Y;
 
     // Hardware Pins
-    int stepA_Pin, dirA_Pin;
-    int stepB_Pin, dirB_Pin;
+    int stepX_Pin, dirX_Pin;
+    int stepY_Pin, dirY_Pin;
     int magnet_Pin;
     int limitX_Pin, limitY_Pin;
     int enable_Pin;
