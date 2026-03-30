@@ -1,3 +1,6 @@
+#ifndef COREXYCONTROLLER_H
+#define COREXYCONTROLLER_H
+
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
@@ -70,3 +73,4 @@ class CoreXYController {
     void disableMotors();
 
 };
+#endif
