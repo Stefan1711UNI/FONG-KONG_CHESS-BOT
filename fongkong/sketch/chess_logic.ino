@@ -128,16 +128,50 @@ static bool validate_queen_move(piece* chessPiece, int x, int y, std::array<std:
     return false; // Invalid queen move
 
 }
+
 static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8> board) { 
     piece* target = get_piece_at_coordinates(x, y, board);
+    
+    // Basic rule: Can't capture your own piece [cite: 156, 157]
     if (target != nullptr && target->is_white == chessPiece->is_white) {
-        return false; // Can't capture own piece
+        return false;
     }
 
     int dx = abs(x - chessPiece->x);
     int dy = abs(y - chessPiece->y);
-    return (dx <= 1 && dy <= 1); // King moves one square in any direction
+
+    // Standard 1-square move [cite: 158, 159]
+    if (dx <= 1 && dy <= 1) {
+        return true;
+    }
+
+    // --- Castling Logic ---
+    // King tries to move 2 squares horizontally on its starting row [cite: 64, 67]
+    if (dy == 0 && dx == 2 && !chessPiece->has_moved) {
+        int rookX = (x > chessPiece->x) ? 7 : 0; // King-side (7) or Queen-side (0) 
+        piece* rook = board[chessPiece->y][rookX];
+
+        // 1. Check if the Rook exists and hasn't moved 
+        if (rook != nullptr && rook->piece_type == pieceType::ROOK && !rook->has_moved) {
+            
+            // 2. Check if the path between King and Rook is clear 
+            int step = (x > chessPiece->x) ? 1 : -1;
+            for (int checkX = chessPiece->x + step; checkX != rookX; checkX += step) {
+                if (board[chessPiece->y][checkX] != nullptr) return false;
+            }
+
+            // 3. Check for Safety (The "No Check" rule) [cite: 35]
+            // Note: is_square_attacked must be defined in your logic file
+            bool enemyColor = !chessPiece->is_white;
+            if (is_square_attacked(chessPiece->x, chessPiece->y, enemyColor, board)) return false; // Current sq
+            if (is_square_attacked(chessPiece->x + step, chessPiece->y, enemyColor, board)) return false; // Passing sq
+            // Target sq check is usually handled by the main move loop
+            
+            return true;
+        }
+    }
     
+    return false;
 }
 
 bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board) {
