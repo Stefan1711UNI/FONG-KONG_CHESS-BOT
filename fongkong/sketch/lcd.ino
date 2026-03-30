@@ -59,15 +59,20 @@ void handleButtons() {
     }
 
     // 2. Restart Game Button
-    if (digitalRead(buttonRestart) == LOW) {
-        lcd.clear();
-        lcd.print("Restarting...");
-        // Call your board initialization function here
-        delay(1000);
-        playerTurn = true;
-        currentPage = 0;
-        updateDisplay();
-    }
+if (digitalRead(buttonRestart) == LOW) {
+    lcd.clear();
+    lcd.print("Resetting Board");
+    
+    // Call the reset logic
+    reset_board(mainBoard);
+    
+    // Reset AI state 
+    playerTurn = true;
+    currentPage = 0;
+    
+    updateDisplay();
+    delay(500); // Prevent accidental double-reset
+}
 
     // 3. End Turn Button [cite: 22, 23]
     if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
