@@ -174,6 +174,30 @@ static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::
     return false;
 }
 
+void execute_move(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8>& board) {
+    // 1. Check for Castling (King moving 2 squares horizontally)
+    if (p->piece_type == pieceType::KING && abs(toX - p->x) == 2) {
+        int rookFromX = (toX > p->x) ? 7 : 0;
+        int rookToX = (toX > p->x) ? 5 : 3;
+        
+        piece* rook = board[p->y][rookFromX];
+        if (rook != nullptr) {
+            // Move the Rook internally
+            board[p->y][rookToX] = rook;
+            board[p->y][rookFromX] = nullptr;
+            rook->x = rookToX;
+            rook->has_moved = true; [cite: 103]
+        }
+    }
+
+    // 2. Standard Move Execution
+    board[p->y][p->x] = nullptr; [cite: 95]
+    board[toY][toX] = p; [cite: 95]
+    p->x = toX;
+    p->y = toY;
+    p->has_moved = true; [cite: 103]
+}
+
 bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board) {
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
