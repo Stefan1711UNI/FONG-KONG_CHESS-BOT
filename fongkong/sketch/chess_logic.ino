@@ -175,27 +175,34 @@ static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::
 }
 
 void execute_move(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8>& board) {
-    // 1. Check for Castling (King moving 2 squares horizontally)
+    // 1. Check for Castling (King moving 2 squares horizontally) [cite: 186]
     if (p->piece_type == pieceType::KING && abs(toX - p->x) == 2) {
-        int rookFromX = (toX > p->x) ? 7 : 0;
-        int rookToX = (toX > p->x) ? 5 : 3;
+        int rookFromX = (toX > p->x) ? 7 : 0; [cite: 186]
+        int rookToX = (toX > p->x) ? 5 : 3; [cite: 186]
         
-        piece* rook = board[p->y][rookFromX];
+        piece* rook = board[p->y][rookFromX]; [cite: 187]
         if (rook != nullptr) {
-            // Move the Rook internally
-            board[p->y][rookToX] = rook;
-            board[p->y][rookFromX] = nullptr;
-            rook->x = rookToX;
-            rook->has_moved = true; [cite: 103]
+            board[p->y][rookToX] = rook; [cite: 188]
+            board[p->y][rookFromX] = nullptr; [cite: 188]
+            rook->x = rookToX; [cite: 188]
+            rook->has_moved = true; [cite: 188]
         }
     }
 
-    // 2. Standard Move Execution
-    board[p->y][p->x] = nullptr; [cite: 95]
-    board[toY][toX] = p; [cite: 95]
-    p->x = toX;
-    p->y = toY;
-    p->has_moved = true; [cite: 103]
+    // 2. Standard Move Execution [cite: 189]
+    board[p->y][p->x] = nullptr; [cite: 189]
+    board[toY][toX] = p; [cite: 189]
+    p->x = toX; [cite: 189]
+    p->y = toY; [cite: 189]
+    p->has_moved = true; [cite: 190]
+
+    // 3. Pawn Promotion Logic (New) 
+    if (p->piece_type == pieceType::PAWN) {
+        // White reaches top (row 7) or Black reaches bottom (row 0) [cite: 142]
+        if ((p->is_white && toY == 7) || (!p->is_white && toY == 0)) {
+            p->piece_type = pieceType::QUEEN; // Automatically promote to Queen [cite: 78, 108]
+        }
+    }
 }
 
 bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board) {
