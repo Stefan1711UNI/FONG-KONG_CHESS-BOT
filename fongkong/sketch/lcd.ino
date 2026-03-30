@@ -4,94 +4,76 @@
 
 hd44780_I2Cexp lcd;
 
-const int buttonTurn = 2;
-const int buttonCapture = 3;
-const int buttonPower = 4;
+// Button Pin Definitions 
+const int buttonCyclePage = 2;  // Changes what is displayed on screen
+const int buttonRestart   = 3;  // Resets the board and game state
+const int buttonEndTurn   = 4;  // Confirms human move and hands turn to AI
 
+// Logic Variables [cite: 9]
 bool playerTurn = true;
-bool systemOn = true;
-
-String pieces[] = {"Pawn", "Knight", "Bishop", "Rook", "Queen"};
-int totalPieces = 5;
-
-void powerOnScreen() {
-    lcd.clear();
-    lcd.print("Power ON");
-    delay(1000);
-    lcd.clear();
-    lcd.print("ChessBot Ready");
-    delay(1000);
-}
-
-void powerOffScreen() {
-    lcd.clear();
-    lcd.print("Power OFF");
-}
-
-void gameStartScreen() {
-    lcd.clear();
-    lcd.print("Game Starting...");
-    delay(1500);
-}
-
-void showTurn(bool playerTurn) {
-    lcd.clear();
-    if (playerTurn)
-        lcd.print("Your Turn");
-    else
-        lcd.print("AI Thinking...");
-}
-
-void pieceCaptured() {
-    int randomIndex = random(totalPieces);
-    lcd.clear();
-    lcd.print("Captured:");
-    lcd.setCursor(0,1);
-    lcd.print(pieces[randomIndex]);
-    delay(1500);
-}
+int currentPage = 0; 
+const int totalPages = 3;
 
 void lcdSetup() {
-    pinMode(buttonTurn, INPUT_PULLUP);
-    pinMode(buttonCapture, INPUT_PULLUP);
-    pinMode(buttonPower, INPUT_PULLUP);
+    pinMode(buttonCyclePage, INPUT_PULLUP); [cite: 14]
+    pinMode(buttonRestart, INPUT_PULLUP);   [cite: 14]
+    pinMode(buttonEndTurn, INPUT_PULLUP);    [cite: 14]
 
-    lcd.begin(16,2);
-
-    randomSeed(analogRead(A0));
-
-    powerOnScreen();
-    gameStartScreen();
-    showTurn(playerTurn);
+    lcd.begin(16, 2); [cite: 14]
+    lcd.backlight();
+    
+    lcd.print("ChessBot v1.0");
+    delay(1000);
+    updateDisplay();
 }
 
-// void loop() {
+void updateDisplay() {
+    lcd.clear();
+    switch (currentPage) {
+        case 0: // Page 1: Game Status 
+            lcd.print("Status: Playing");
+            lcd.setCursor(0, 1);
+            lcd.print(playerTurn ? "> Your Turn" : "> AI Thinking");
+            break;
+            
+        case 1: // Page 2: Piece Graveyard (Example) [cite: 13, 14]
+            lcd.print("Last Capture:");
+            lcd.setCursor(0, 1);
+            lcd.print("None Yet"); 
+            break;
+            
+        case 2: // Page 3: System Info
+            lcd.print("Engine: Active");
+            lcd.setCursor(0, 1);
+            lcd.print("Depth: 3 Plies");
+            break;
+    }
+}
 
-//     if (digitalRead(buttonPower) == LOW) {
-//         systemOn = !systemOn;
+void handleButtons() {
+    // 1. Cycle Page Button
+    if (digitalRead(buttonCyclePage) == LOW) {
+        currentPage = (currentPage + 1) % totalPages;
+        updateDisplay();
+        delay(300); // Debounce
+    }
 
-//         if (systemOn) {
-//             powerOnScreen();
-//             gameStartScreen();
-//             showTurn(playerTurn);
-//         } else {
-//             powerOffScreen();
-//         }
+    // 2. Restart Game Button
+    if (digitalRead(buttonRestart) == LOW) {
+        lcd.clear();
+        lcd.print("Restarting...");
+        // Call your board initialization function here
+        delay(1000);
+        playerTurn = true;
+        currentPage = 0;
+        updateDisplay();
+    }
 
-//         delay(400);
-//     }
-
-//     if (!systemOn) return;
-
-//     if (digitalRead(buttonTurn) == LOW) {
-//         playerTurn = !playerTurn;
-//         showTurn(playerTurn);
-//         delay(300);
-//     }
-
-//     if (digitalRead(buttonCapture) == LOW) {
-//         pieceCaptured();
-//         showTurn(playerTurn);
-//         delay(300);
-//     }
-// }
+    // 3. End Turn Button [cite: 22, 23]
+    if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
+        playerTurn = false;
+        updateDisplay();
+        // Trigger AI Move Logic here
+        delay(300); 
+    }
+}
