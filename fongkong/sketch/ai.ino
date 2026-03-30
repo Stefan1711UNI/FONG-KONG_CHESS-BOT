@@ -206,3 +206,20 @@ static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side
         strcpy(result, "none"); // Safety fallback
     }
 }
+     
+void sync_board_to_engine(std::array<std::array<piece*, 8>, 8> board) {
+    // Clear the engine board first (b is the global char array in ai.ino)
+    for (int i = 0; i < 128; i++) b[i] = 0; [cite: 1, 95]
+
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            piece* p = board[y][x]; [cite: 124]
+            if (p != nullptr) {
+                // The 0x88 index is (row << 4) | col
+                // We map your y to the row and x to the column
+                int engineIndex = (y << 4) + x; [cite: 95]
+                b[engineIndex] = translate_to_engine_bits(p); [cite: 95]
+            }
+        }
+    }
+}
