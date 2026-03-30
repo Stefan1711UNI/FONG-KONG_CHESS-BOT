@@ -140,3 +140,18 @@ static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::
     
 }
 
+bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            piece* p = board[y][x];
+            // If there's a piece here and it belongs to the attacking side
+            if (p != nullptr && p->is_white == whiteAttacker) {
+                // Check if this piece can legally reach the target square
+                if (validate_piece_move(p, targetX, targetY, board)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
