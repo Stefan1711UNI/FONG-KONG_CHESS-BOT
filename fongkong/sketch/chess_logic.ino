@@ -7,6 +7,9 @@ piece* get_piece_at_coordinates(int x, int y, std::array<std::array<piece*, 8>, 
     return board[y][x];
 }
 
+bool is_on_board(int x, int y) {
+    return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
+}
 
 static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board) {
     if (chessPiece == nullptr) {
