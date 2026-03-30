@@ -244,3 +244,35 @@ bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>,
     // If any enemy can attack your King's square on the new board, the move is illegal
     return !is_square_attacked(kX, kY, !p->is_white, hypotheticalBoard);
 }
+
+void reset_board(std::array<std::array<piece*, 8>, 8>& board) {
+    // 1. Clear the board
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            board[y][x] = nullptr;
+        }
+    }
+
+    // 2. Helper to place pieces
+    auto place = [&](int x, int y, pieceType type, bool isWhite) {
+        piece* p = new piece();
+        p->x = x; p->y = y;
+        p->piece_type = type;
+        p->is_white = isWhite;
+        p->has_moved = false; // Critical for Castling [cite: 177, 190]
+        board[y][x] = p;
+    };
+
+    // 3. Place Pawns
+    for (int i = 0; i < 8; i++) {
+        place(i, 1, PAWN, true);  // White 
+        place(i, 6, PAWN, false); // Black 
+    }
+
+    // 4. Place Rooks, Knights, Bishops, Queen, King
+    pieceType backline[] = {ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK};
+    for (int i = 0; i < 8; i++) {
+        place(i, 0, backline[i], true);  // White Backline
+        place(i, 7, backline[i], false); // Black Backline
+    }
+}
