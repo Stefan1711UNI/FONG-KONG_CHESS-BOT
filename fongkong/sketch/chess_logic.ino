@@ -155,3 +155,27 @@ bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array
     }
     return false;
 }
+
+bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board) {
+    if (!is_on_board(toX, toY)) return false; [cite: 112]
+    if (!validate_piece_move(p, toX, toY, board)) return false; [cite: 113]
+
+    // Create a "Pretend" board to test if the move is safe for the King
+    auto hypotheticalBoard = board;
+    hypotheticalBoard[p->y][p->x] = nullptr;
+    hypotheticalBoard[toY][toX] = p;
+
+    // Find your King's position
+    int kX, kY;
+    for(int y=0; y<8; y++) {
+        for(int x=0; x<8; x++) {
+            piece* temp = hypotheticalBoard[y][x];
+            if(temp != nullptr && temp->piece_type == KING && temp->is_white == p->is_white) {
+                kX = x; kY = y;
+            }
+        }
+    }
+
+    // If any enemy can attack your King's square on the new board, the move is illegal
+    return !is_square_attacked(kX, kY, !p->is_white, hypotheticalBoard);
+}
