@@ -28,6 +28,7 @@ namespace chessbot
         uint8_t y;
         pieceType piece_type;
         bool is_white;
+        bool has_moved;
     };
 }
 
