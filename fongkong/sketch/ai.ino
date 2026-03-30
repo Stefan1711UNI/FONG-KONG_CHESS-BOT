@@ -208,17 +208,18 @@ static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side
 }
      
 void sync_board_to_engine(std::array<std::array<piece*, 8>, 8> board) {
-    // Clear the engine board first (b is the global char array in ai.ino)
-    for (int i = 0; i < 128; i++) b[i] = 0; [cite: 1, 95]
+    // 1. Clear the engine's internal board [cite: 99]
+    for (int i = 0; i < 128; i++) b[i] = 0;
 
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            piece* p = board[y][x]; [cite: 124]
+            piece* p = board[y][x]; [cite: 100]
             if (p != nullptr) {
-                // The 0x88 index is (row << 4) | col
-                // We map your y to the row and x to the column
-                int engineIndex = (y << 4) + x; [cite: 95]
-                b[engineIndex] = translate_to_engine_bits(p); [cite: 95]
+                // 2. Convert (x,y) to 0x88 index: (row << 4) + col [cite: 101]
+                int engineIndex = (y << 4) + x; 
+                
+                // 3. Convert your piece struct into the engine's bit format [cite: 103]
+                b[engineIndex] = translate_to_engine_bits(p);
             }
         }
     }
