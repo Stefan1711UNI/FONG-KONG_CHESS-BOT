@@ -5,9 +5,9 @@
 hd44780_I2Cexp lcd;
 
 // Button Pin Definitions 
-const int buttonCyclePage = 2;  // Changes what is displayed on screen
-const int buttonRestart   = 3;  // Resets the board and game state
-const int buttonEndTurn   = 4;  // Confirms human move and hands turn to AI
+// const int buttonCyclePage = 2;  // Changes what is displayed on screen
+// const int buttonRestart   = 3;  // Resets the board and game state
+// const int buttonEndTurn   = 4;  // Confirms human move and hands turn to AI
 
 // Logic Variables [cite: 9]
 bool playerTurn = true;
@@ -15,15 +15,15 @@ int currentPage = 0;
 const int totalPages = 3;
 
 void lcdSetup() {
-    pinMode(buttonCyclePage, INPUT_PULLUP); 
-    pinMode(buttonRestart, INPUT_PULLUP);   
-    pinMode(buttonEndTurn, INPUT_PULLUP);    
+    // pinMode(buttonCyclePage, INPUT_PULLUP); 
+    // pinMode(buttonRestart, INPUT_PULLUP);   
+    // pinMode(buttonEndTurn, INPUT_PULLUP);    
 
     lcd.begin(16, 2); 
     lcd.backlight();
     
     lcd.print("ChessBot v1.0");
-    delay(1000);
+    //delay(1000);
     updateDisplay();
 }
 
@@ -50,35 +50,16 @@ void updateDisplay() {
     }
 }
 
-void handleButtons() {
-    // 1. Cycle Page Button
-    if (digitalRead(buttonCyclePage) == LOW) {
-        currentPage = (currentPage + 1) % totalPages;
-        updateDisplay();
-        delay(300); // Debounce
-    }
-
-    // 2. Restart Game Button
-if (digitalRead(buttonRestart) == LOW) {
+void lcd_confirmMove(const char* move) {
     lcd.clear();
-    lcd.print("Resetting Board");
-    
-    // Call the reset logic
-    reset_board(board);
-    
-    // Reset AI state 
-    playerTurn = true;
-    currentPage = 0;
-    
-    updateDisplay();
-    delay(500); // Prevent accidental double-reset
+    lcd.print("Confirming Move:");
+    lcd.setCursor(0, 1);
+    lcd.print(move);
+    delay(1000); // Display for 1 second
 }
 
-    // 3. End Turn Button [cite: 22, 23]
-    if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
-        playerTurn = false;
-        updateDisplay();
-        // Trigger AI Move Logic here
-        delay(300); 
-    }
+void pieceCaptured() {
+    lcd.clear();
+    lcd.print("Piece Captured!");
+    delay(1000); // Display for 1 second
 }
