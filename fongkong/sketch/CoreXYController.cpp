@@ -1,10 +1,19 @@
 #include "CoreXYController.h"
 
-//Constructor, microstepping added x16 by steps_x + y
-CoreXYController::CoreXYController(float sqSize, float steps_x) {
+//---General Pins---
+//#define X_STEP_PIN 2
+//#define X_DIR_PIN 5
+//#define Y_STEP_PIN 3
+//#define Y_DIR_PIN 6
+//#define MAGNET_PIN 12 //SpnEn
+//#define LIMIT_X 9
+//#define LIMIT_Y 10
+//#define ENABLE_PIN 8
+
+//Constructor, microstepping added x8, original stepsPerMM = 5.0
+CoreXYController::CoreXYController(float sqSize, float stepsMM) {
   squareSizeMM = sqSize;
-  stepsPerMM_X = steps_x;
-  stepsPerMM_Y = 40.0;
+  stepsPerMM = stepsMM;
 }
 
 //Setup 
@@ -59,7 +68,7 @@ void CoreXYController::calibrate() {
   motorX.setSpeed(-homingSpeed); 
 
 
-  //Keeps moving untill limit switch is hit 
+  //Keeps moving until limit switch is hit 
   while (digitalRead(limitX_Pin) == HIGH) {
     motorX.runSpeed();
   }
@@ -105,8 +114,8 @@ void CoreXYController::calibrate() {
   float offsetA1_Y_mm = 10.0; 
 
   //Convert mm to steps
-  long offsetStepsX = round(offsetA1_X_mm * stepsPerMM_X);
-  long offsetStepsY = round(offsetA1_Y_mm * stepsPerMM_Y);
+  long offsetStepsX = round(offsetA1_X_mm * stepsPerMM);
+  long offsetStepsY = round(offsetA1_Y_mm * stepsPerMM);
 
   //Command motors to move to A1
   motorX.moveTo(offsetStepsX);
@@ -257,7 +266,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   int pivot1_X = startGridX + stepX;
   int pivot1_Y = startGridY + stepY;
 
-  //Calculate Pivot 2: Moving 1 square orthogonally (straight) first
+  //Calculate Pivot 2: Moving 1 square straight first
   int pivot2_X = startGridX;
   int pivot2_Y = startGridY;
   
@@ -277,7 +286,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   
   float pivotMM_X, pivotMM_Y;
 
-  //Tier 1: Check if Pivot 1 and the final target square are both empty
+  //Option 1: Check if Pivot 1 and the final target square are both empty
   if (boardState[pivot1_Y][pivot1_X] == nullptr && boardState[endGridY][endGridX] == nullptr) {
     Serial.println("BOARD: Knight Path 1 (Diagonal First) is clear.");
     //Convert pivot grid to mm coords
@@ -288,7 +297,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
     executeCoreXYMovement(endMM_X, endMM_Y);
   } 
   
-  //Tier 2: Check if Pivot 2 and the final target square are both empty
+  //Option 2: Check if Pivot 2 and the final target square are both empty
   else if (boardState[pivot2_Y][pivot2_X] == nullptr && boardState[endGridY][endGridX] == nullptr) {
     Serial.println("BOARD: Knight Path 2 (Orthogonal First) is clear.");
     //Convert pivot grid to mm coords
@@ -299,7 +308,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
     executeCoreXYMovement(endMM_X, endMM_Y);
   } 
   
-  //Tier 3: Fallback if both intermediate pivot squares are blocked by pieces
+  //Option 3: Fallback if both intermediate pivot squares are blocked by pieces
   else {
     Serial.println("BOARD: Knight is boxed in. Routing along seams.");
     routeAlongSeams(startMM_X, startMM_Y, endMM_X, endMM_Y);
@@ -314,19 +323,15 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   return true;
 }
 
-//Executes the CoreXY movement
+//Executes the Cartesian movement
 void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
   //Calculate coreXY target mm
   float motorX_mm = targetX;
   float motorY_mm = targetY;
 
-  //if (targetY > currentY) {
-  //  motorY_mm += squareSizeMM; 
-  //}
-
   //Convert mm to steps for motor
-  long targetStepsA = round(motorX_mm * stepsPerMM_X);
-  long targetStepsB = round(motorY_mm * stepsPerMM_Y);
+  long targetStepsA = round(motorX_mm * stepsPerMM);
+  long targetStepsB = round(motorY_mm * stepsPerMM);
 
   //Put into array for multiStepper
   long positions[2];
@@ -334,13 +339,13 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
   positions[1] = targetStepsB; // Motor Y
 
   //DEBUGING
-  Serial.print("   -> Driving Motors to: [");
-  Serial.print(mmToAlgebraic(targetX, targetY));
-  Serial.print("]  (X=");
-  Serial.print(targetX);
-  Serial.print("mm, Y=");
-  Serial.print(targetY);
-  Serial.println("mm)");
+  //Serial.print("   -> Driving Motors to: [");
+  //Serial.print(mmToAlgebraic(targetX, targetY));
+  //Serial.print("]  (X=");
+  //Serial.print(targetX);
+  //Serial.print("mm, Y=");
+  //Serial.print(targetY);
+  //Serial.println("mm)");
 
   //Call motors
   steppers.moveTo(positions);
@@ -371,7 +376,7 @@ void CoreXYController::parseSquare(String square, int &gridX, int &gridY) {
   char rank = square.charAt(1); //Number (Row on the board)
 
   //Calculates the X value using ASCII
-  //'E' will be turned into '4', a more manageble value than 'E'
+  //'E' will be turned into '4', a more manageable value than 'E'
   if(file >= 'a' && file <= 'h'){
     gridX = file - 'a';
   } else if(file >= 'A' && file <= 'H'){
@@ -428,8 +433,9 @@ bool CoreXYController::capturePiece(String targetSquare) {
   gridToMM(targetGridX, targetGridY, targetMM_X, targetMM_Y);
 
   //Define the graveyard coordinate
-  float graveMM_X = -380.0; 
-  float graveMM_Y = 350.0;
+  float graveMM_X = -350.0; 
+  float graveMM_Y = 300.0;
+  float halfSquare = squareSizeMM / 2.0;
 
   //Move to the target piece
   enableMotors();
@@ -441,10 +447,35 @@ bool CoreXYController::capturePiece(String targetSquare) {
   magnetON();
   delay(300);
 
-  //Move along x axis towards graveyard
-  //TODO: Implement raycasting here to ensure no other pieces are blocking the path to the X-edge.
-  Serial.println("BOARD: Dragging piece off the board edge...");
-  executeCoreXYMovement(graveMM_X, targetMM_Y);
+
+  //Collision check
+  bool pathClear = true;
+  Serial.println("BOARD: Checking extraction path to the board edge...");
+  for (int x = targetGridX + 1; x <= 7; x++) {
+    if (boardState[targetGridY][x] != nullptr) {
+      Serial.println("BOARD: Obstacle detected on extraction path!");
+      pathClear = false;
+      break; 
+    }
+  }
+
+  if (pathClear) {
+    Serial.println("BOARD: Extraction path clear. Dragging straight off the board.");
+    executeCoreXYMovement(graveMM_X, targetMM_Y);
+
+  } else {
+    Serial.println("BOARD: Path blocked. Routing via the 'Center Highway' to escape crowded rows.");
+    //Shift to the seam
+    float seamX = targetMM_X - halfSquare;
+    executeCoreXYMovement(seamX, targetMM_Y);
+    
+    //Moves to between row 4-5, to avoid crowded row 1-2 and 7-8
+    float highwayY = 3.5 * squareSizeMM; 
+    executeCoreXYMovement(seamX, highwayY);
+    
+    //Move to edge of board
+    executeCoreXYMovement(graveMM_X, highwayY);
+  }
 
   //Move into graveyard
   Serial.println("BOARD: Moving to graveyard...");
@@ -499,22 +530,22 @@ void CoreXYController::routeAlongSeams(float startX, float startY, float targetX
   //---START ROUTING ALONG SEAMS---
 
   //First diagonal shift to the starting square's corner
-  Serial.println("BOARD: Routing Step 1 (To Grid Corner)");
+  //Serial.println("BOARD: Routing Step 1 (To Grid Corner)");
   executeCoreXYMovement(seamStartX, seamStartY);
-  delay(2000);
+  //delay(2000);
   //Next slide down the X-axis gridline
-  Serial.println("BOARD: Routing Step 2 (Sliding X Seam)");
-  delay(2000);
+  //Serial.println("BOARD: Routing Step 2 (Sliding X Seam)");
+  //delay(2000);
   executeCoreXYMovement(seamEndX, seamStartY);
 
   //THen move down the Y-axis gridline
-  Serial.println("BOARD: Routing Step 3 (Sliding Y Seam)");
-  delay(2000);
+  //Serial.println("BOARD: Routing Step 3 (Sliding Y Seam)");
+  //delay(2000);
   executeCoreXYMovement(seamEndX, seamEndY);
 
-  //Finaly a diagonal shift into the center of the target square
-  Serial.println("BOARD: Routing Step 4 (Entering Target Center)");
-  delay(2000);
+  //Finally a diagonal shift into the center of the target square
+  //Serial.println("BOARD: Routing Step 4 (Entering Target Center)");
+  //delay(2000);
   executeCoreXYMovement(targetX, targetY);
 }  
 

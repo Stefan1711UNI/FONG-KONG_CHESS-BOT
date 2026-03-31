@@ -7,7 +7,7 @@
 class CoreXYController {
   public:
     //Constructor
-    CoreXYController(float squareSize, float stepsPerMM_X);
+    CoreXYController(float squareSize, float stepsPerMM);
 
     void setUp(int pinStepX, int pinDirX, int pinStepY, int pinDirY, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable);
 
@@ -26,7 +26,7 @@ class CoreXYController {
     //Call when capturing a piece
     bool capturePiece(String targetSquare);
 
-    ////Helper: Converts raw millimeters back to algebraic notation for debugging
+    //Helper: Converts raw millimeters back to algebraic notation for debugging
     String mmToAlgebraic(float mmX, float mmY);
 
   
@@ -43,8 +43,7 @@ class CoreXYController {
 
     //Physical Parameters
     float squareSizeMM;         //Size of square in mm
-    float stepsPerMM_X;           //How many steps to travel 1 mm
-    float stepsPerMM_Y;
+    float stepsPerMM;           //How many steps to travel 1 mm
 
     // Hardware Pins
     int stepX_Pin, dirX_Pin;
