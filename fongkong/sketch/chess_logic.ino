@@ -276,3 +276,98 @@ void reset_board(std::array<std::array<piece*, 8>, 8>& board) {
         place(i, 7, backline[i], false); // Black Backline
     }
 }
+
+/**
+ * Determines if the king of a specific color is currently in check.
+ */
+bool is_in_check(bool isWhite, std::array<std::array<piece*, 8>, 8> board) {
+    int kingX = -1, kingY = -1;
+
+    // Find the king's position [cite: 69, 70]
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            piece* p = board[y][x];
+            if (p != nullptr && p->piece_type == pieceType::KING && p->is_white == isWhite) {
+                kingX = x; [cite: 71]
+                kingY = y; [cite: 71]
+                break;
+            }
+        }
+    }
+
+    // If king is not found (shouldn't happen in legal play), return false
+    if (kingX == -1) return false;
+
+    // Check if any enemy piece attacks the king's square [cite: 72]
+    return is_square_attacked(kingX, kingY, !isWhite, board);
+}
+
+/**
+ * Determines if the player of the specified color is in checkmate.
+ */
+bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board) {
+    // 1. If the king is not in check, it cannot be checkmate (might be stalemate)
+    if (!is_in_check(isWhite, board)) {
+        return false;
+    }
+
+    // 2. Iterate through every piece belonging to the player
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            piece* p = board[y][x];
+
+            if (p != nullptr && p->is_white == isWhite) {
+                // 3. Try moving this piece to every possible square on the board
+                for (int targetY = 0; targetY < 8; targetY++) {
+                    for (int targetX = 0; targetX < 8; targetX++) {
+                        
+                        // 4. Check if this specific move is legal [cite: 67]
+                        // is_move_legal already simulates the move and checks for king safety 
+                        if (is_move_legal(p, targetX, targetY, board)) {
+                            // If at least one legal move exists, it's not checkmate
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. No legal moves found while in check
+    return true;
+}
+
+/**
+ * Determines if the player of the specified color is in stalemate.
+ * A stalemate occurs if the king is NOT in check, but there are no legal moves.
+ */
+bool is_stalemate(bool isWhite, std::array<std::array<piece*, 8>, 8> board) {
+    // 1. If the king is currently in check, it's either checkmate or just "check"
+    if (is_in_check(isWhite, board)) {
+        return false;
+    }
+
+    // 2. Scan the board for all pieces belonging to the current player
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            piece* p = board[y][x];
+
+            if (p != nullptr && p->is_white == isWhite) {
+                // 3. Check every possible destination square on the 8x8 board
+                for (int targetY = 0; targetY < 8; targetY++) {
+                    for (int targetX = 0; targetX < 8; targetX++) {
+                        
+                        // 4. Use your existing logic to see if this move is valid and safe 
+                        if (is_move_legal(p, targetX, targetY, board)) {
+                            // If even one legal move exists, it's not a stalemate
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. No legal moves were found, and the king is not in check
+    return true; 
+}
