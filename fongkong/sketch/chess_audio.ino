@@ -28,19 +28,19 @@ void loop() {
 // Plays a standard move sound (Folder 01, File 001)
 void playMove() {
   Serial.println(F("Playing: Move"));
-  myDFPlayer.playFolder(1, 1); [cite: 7]
+  myDFPlayer.playFolder(1, 1);
 }
 
-// Plays a capture sound (Folder 01, File 002)
+// Plays a capture sound (Folder 01, File 003)
 void playCapture() {
   Serial.println(F("Playing: Capture"));
-  myDFPlayer.playFolder(1, 2);
+  myDFPlayer.playFolder(1, 3);
 }
 
-// Plays a notification for Check (Folder 01, File 003)
+// Plays a notification for Check (Folder 01, File 002)
 void playCheck() {
   Serial.println(F("Playing: Check"));
-  myDFPlayer.playFolder(1, 3);
+  myDFPlayer.playFolder(1, 2);
 }
 
 // Plays game over/checkmate sound (Folder 01, File 004)
