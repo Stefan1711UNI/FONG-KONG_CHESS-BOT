@@ -15,11 +15,11 @@ int currentPage = 0;
 const int totalPages = 3;
 
 void lcdSetup() {
-    pinMode(buttonCyclePage, INPUT_PULLUP); [cite: 14]
-    pinMode(buttonRestart, INPUT_PULLUP);   [cite: 14]
-    pinMode(buttonEndTurn, INPUT_PULLUP);    [cite: 14]
+    pinMode(buttonCyclePage, INPUT_PULLUP); 
+    pinMode(buttonRestart, INPUT_PULLUP);   
+    pinMode(buttonEndTurn, INPUT_PULLUP);    
 
-    lcd.begin(16, 2); [cite: 14]
+    lcd.begin(16, 2); 
     lcd.backlight();
     
     lcd.print("ChessBot v1.0");

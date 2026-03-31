@@ -175,26 +175,26 @@ static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::
 }
 
 void execute_move(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8>& board) {
-    // 1. Check for Castling (King moving 2 squares horizontally) [cite: 186]
+    // 1. Check for Castling (King moving 2 squares horizontally) 
     if (p->piece_type == pieceType::KING && abs(toX - p->x) == 2) {
-        int rookFromX = (toX > p->x) ? 7 : 0; [cite: 186]
-        int rookToX = (toX > p->x) ? 5 : 3; [cite: 186]
+        int rookFromX = (toX > p->x) ? 7 : 0; 
+        int rookToX = (toX > p->x) ? 5 : 3; 
         
-        piece* rook = board[p->y][rookFromX]; [cite: 187]
+        piece* rook = board[p->y][rookFromX]; 
         if (rook != nullptr) {
-            board[p->y][rookToX] = rook; [cite: 188]
-            board[p->y][rookFromX] = nullptr; [cite: 188]
-            rook->x = rookToX; [cite: 188]
-            rook->has_moved = true; [cite: 188]
+            board[p->y][rookToX] = rook; 
+            board[p->y][rookFromX] = nullptr; 
+            rook->x = rookToX; 
+            rook->has_moved = true; 
         }
     }
 
-    // 2. Standard Move Execution [cite: 189]
-    board[p->y][p->x] = nullptr; [cite: 189]
-    board[toY][toX] = p; [cite: 189]
-    p->x = toX; [cite: 189]
-    p->y = toY; [cite: 189]
-    p->has_moved = true; [cite: 190]
+    // 2. Standard Move Execution 
+    board[p->y][p->x] = nullptr; 
+    board[toY][toX] = p; 
+    p->x = toX; 
+    p->y = toY; 
+    p->has_moved = true; 
 
     // 3. Pawn Promotion Logic (New) 
     if (p->piece_type == pieceType::PAWN) {
@@ -222,8 +222,8 @@ bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array
 }
 
 bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board) {
-    if (!is_on_board(toX, toY)) return false; [cite: 112]
-    if (!validate_piece_move(p, toX, toY, board)) return false; [cite: 113]
+    if (!is_on_board(toX, toY)) return false;
+    if (!validate_piece_move(p, toX, toY, board)) return false; 
 
     // Create a "Pretend" board to test if the move is safe for the King
     auto hypotheticalBoard = board;
