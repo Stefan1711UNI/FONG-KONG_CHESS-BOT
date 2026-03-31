@@ -64,7 +64,7 @@ if (digitalRead(buttonRestart) == LOW) {
     lcd.print("Resetting Board");
     
     // Call the reset logic
-    reset_board(mainBoard);
+    reset_board(board);
     
     // Reset AI state 
     playerTurn = true;
