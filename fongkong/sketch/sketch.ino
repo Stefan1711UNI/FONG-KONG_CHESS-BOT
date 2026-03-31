@@ -3,19 +3,27 @@
 #include "types.h"
 #include<array>
 #include <cstring>
+#include <Arduino.h>
+
 using namespace std;
 using namespace chessbot;
+
+#define LEFT_BUTTON_PIN 2
+#define RIGHT_BUTTON_PIN 3
+#define PAGE_BUTTON_PIN 4
 
 static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 static chessbot::move translate_move_to_coordinates(const char* stringMove);
 static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side);
 piece* get_piece_at_coordinates(int x, int y);
-char* detect_player_move();
+char* detect_player_move(bool* playerEndedTurn);
 static bool try_move_piece(char* from, char* to, std::array<std::array<piece*, 8>, 8>  board);
 void configure();
 void initBoard(std::array<std::array<piece*, 8>, 8> board);
 void showTurn(bool playerTurn);
 void pieceCaptured();
+void lcd_confirmMove(const char* move);
+bool winning_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 
 
 
@@ -23,12 +31,33 @@ void pieceCaptured();
 
 std::array<std::array<piece*, 8>, 8>  board; 
 bool player_white = true;
+bool game_won = false;
+bool player_confirm = false;
+
+bool left_button_pressed = false;
+bool right_button_pressed = false;
+bool page_button_pressed = false;
+
+void buttonLeftPressed() {
+    left_button_pressed = true;
+}
+
+void buttonRightPressed() {
+    right_button_pressed = true;
+}
+
+void buttonPagePressed() {
+    page_button_pressed = true;
+}
+
 
 
 void setup() {
     configure();
     initBoard(board);
-
+    attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
+    attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PAGE_BUTTON_PIN), buttonPagePressed, FALLING);
 }
 
 
@@ -38,7 +67,8 @@ void loop() {
     {
         // get player move
         showTurn(true);
-        char* player_move = detect_player_move();
+        char* player_move = detect_player_move(&player_confirm);
+        player_confirm = false;
         
         // validate player move
         chessbot::move player_chessbot_move = translate_move_to_coordinates(player_move);
@@ -52,6 +82,10 @@ void loop() {
         if (valid) {
             board[player_chessbot_move.to_y][player_chessbot_move.to_x] = player_piece;
             board[player_chessbot_move.from_y][player_chessbot_move.from_x] = nullptr;
+            if (winning_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board)) {
+                game_won = true;
+                break;
+            }
         }
         // get ai move
         char ai_move[5];
@@ -72,13 +106,56 @@ void loop() {
             strncpy(from, ai_move, 2);
             strncpy(to, ai_move + 2, 2);
             bool piece_moved = try_move_piece(from,to, board);
+            while (player_confirm == false) {
+                lcd_confirmMove(ai_move);
+            }
+            player_confirm = false;
+            
             if (piece_moved) {
                 board[ai_chessbot_move.to_y][ai_chessbot_move.to_x] = ai_piece;
                 board[ai_chessbot_move.from_y][ai_chessbot_move.from_x] = nullptr;
+                if (winning_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board)) {
+                    game_won = true;
+                    break;
+                }
             }
         }
     }
     
+}
+
+
+void handleButtons(int button, int current_page) {
+    // 1. Cycle Page Button
+    if (digitalRead(buttonCyclePage) == LOW) {
+        currentPage = (currentPage + 1) % totalPages;
+        updateDisplay();
+        delay(300); // Debounce
+    }
+
+    // 2. Restart Game Button
+if (digitalRead(buttonRestart) == LOW) {
+    lcd.clear();
+    lcd.print("Resetting Board");
+    
+    // Call the reset logic
+    reset_board(board);
+    
+    // Reset AI state 
+    playerTurn = true;
+    currentPage = 0;
+    
+    updateDisplay();
+    //delay(500); // Prevent accidental double-reset
+}
+
+    // 3. End Turn Button [cite: 22, 23]
+    if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
+        playerTurn = false;
+        updateDisplay();
+        // Trigger AI Move Logic here
+        delay(300); 
+    }
 }
 
     
@@ -157,7 +234,7 @@ void configure() {
 }
 
 bool check_game_state() {
-    return true;
+    return !game_won;
 }
 
 piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {

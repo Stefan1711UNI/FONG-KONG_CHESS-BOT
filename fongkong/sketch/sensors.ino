@@ -40,7 +40,12 @@ char* detect_player_move(bool* playerEndedTurn = nullptr) {
   
 
   while (!*playerEndedTurn) {
+    readSensors();
     lastMove = get_changed_position();
+    #ifdef DEBUG
+    Serial.print("Detected move: ");
+    Serial.println(lastMove);
+    #endif
   }
   return lastMove;
 }
