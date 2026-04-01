@@ -23,8 +23,8 @@ void configure();
 void initBoard(std::array<std::array<piece*, 8>, 8>& board);
 void showTurn(bool playerTurn);
 void pieceCaptured();
-void lcd_confirmMove(const char* move);
-void lcdSetup();
+//void lcd_confirmMove(const char* move);
+//void lcdSetup();
 bool winning_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 void wait_for_pawns();
 
@@ -109,6 +109,7 @@ void setup() {
     Serial.println("Initializing...");
     configure();
     initBoard(board);
+    sensorSetup();
     //lcdSetup();
     boardSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
@@ -121,17 +122,29 @@ void loop() {
     // while game is running
     while (check_game_state())
     {
+
         // get player move
         //showTurn(true);
         Serial.println("New loop");
+
+        char* player_move = nullptr;
+
         if (turn == 0) {
             Serial.println("First loop");
             wait_for_pawns();
-            char* player_move = detect_player_move(true, &player_confirm);
+            player_confirm = false; 
+            player_move = detect_player_move(true, &player_confirm);
+        } else{
+            player_confirm = false;
+            player_move = detect_player_move(false, &player_confirm);
         }
-        char* player_move = detect_player_move(false, &player_confirm);
-        
         player_confirm = false;
+
+        if (player_move == nullptr) {
+            Serial.println("Error: Move was incomplete. Waiting for a valid move...");
+            continue; // Go back to the top of the while loop and ask the player again!
+        }
+
         Serial.println("Player move");
         Serial.println(player_move);
         // validate player move
@@ -139,12 +152,18 @@ void loop() {
         piece* player_piece = get_piece_at_coordinates(player_chessbot_move.from_x, player_chessbot_move.from_y);
         bool valid = validate_piece_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
         Serial.println(valid);
+
+        if (!valid) {
+            Serial.println("Move rejected. Try again.");
+            continue; // Go back to the top and let the player try again
+        }
+
         if (get_piece_at_coordinates(player_chessbot_move.to_x, player_chessbot_move.to_y) != nullptr) {
             //pieceCaptured();
         }
 
         // update board state
-        if (valid) {
+        
             board[player_chessbot_move.to_y][player_chessbot_move.to_x] = player_piece;
             player_piece->x = player_chessbot_move.to_x;
             player_piece->y = player_chessbot_move.to_y;
@@ -153,7 +172,6 @@ void loop() {
             //     game_won = true;
             //     break;
             // }
-        }
 
 
         //here
@@ -167,9 +185,8 @@ void loop() {
         Serial.println(ai_move);
         chessbot::move ai_chessbot_move = translate_move_to_coordinates(ai_move);
         piece* ai_piece = get_piece_at_coordinates(ai_chessbot_move.from_x, ai_chessbot_move.from_y);
-        if (get_piece_at_coordinates(ai_chessbot_move.to_x, ai_chessbot_move.to_y) != nullptr) {
-           // pieceCaptured();
-        }
+
+        
         bool ai_valid = validate_piece_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
 
         // update board state
@@ -179,8 +196,12 @@ void loop() {
             strncpy(from, ai_move, 2);
             strncpy(to, ai_move + 2, 2);
             bool piece_moved = try_move_piece(from,to, board);
+
+            player_confirm = false; // Reset it before the wait!
+            Serial.println("Waiting for player to confirm AI move completion...");
+
             while (player_confirm == false) {
-                lcd_confirmMove(ai_move);
+                delay(10); 
             }
             player_confirm = false;
             

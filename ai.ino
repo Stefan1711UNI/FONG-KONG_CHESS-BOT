@@ -163,7 +163,7 @@ char translate_to_engine_bits(piece* p) {
     char type = 0;
     // Engine mapping: P=1, N=2, K=3, B=4, R=5, Q=6 [cite: 6]
     switch(p->piece_type) {
-        case pieceType::PAWN:   type = 2; break;
+        case pieceType::PAWN:   type = p->is_white ? 2 : 1; break;
         case pieceType::KNIGHT: type = 3; break;
         case pieceType::KING:   type = 4; break;
         case pieceType::BISHOP: type = 5; break;
@@ -187,14 +187,16 @@ static void get_ai_move(std::array<std::array<piece*, 8>, 8> board, char* result
     Q = 0;             // Reset evaluation score
     O = S;             // Reset en-passant/castling flags to default [cite: 31]
     T = 0x3F;          // Set search time/depth limit 
-    k = (side == 0) ? 16 : 8; // Set moving side (0=White/16, 1=Black/8) [cite: 4]
+    k = (side == 0) ? 8 : 16; // Set moving side (0=White/16, 1=Black/8) [cite: 4]
     K = I;             // Set K to 'Infinity' to signal search mode [cite: 21]
     
     // 2. Sync pieces while PRESERVING positional tables (indices 8-15 in each row)
     for(int i=0; i<8; i++) {
         for(int j=0; j<8; j++) {
             // b[row * 16 + col] preserves the 0x88 board structure [cite: 7, 89]
-            b[i*16 + j] = translate_to_engine_bits(board[i][j]); 
+            
+            b[i*16 + j] = translate_to_engine_bits(board[i][j]);  
+
         }
     }
 
@@ -205,6 +207,8 @@ static void get_ai_move(std::array<std::array<piece*, 8>, 8> board, char* result
     // 4. Copy the encoded move string (e.g., "e2e4") to result [cite: 93, 94]
     if (c[0] != '\0') {
         strncpy(result, c, 5); 
+        result[1] = '9' - result[1] + '0';
+        result[3] = '9' - result[3] + '0';
     } else {
         strcpy(result, "none"); // Safety fallback
     }

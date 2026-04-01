@@ -9,6 +9,8 @@ const byte PCF_ADDRS[8] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x38};
 bool sensorBoard[8][8];
 bool initialBoard[8][8];
 
+bool was_lifted[8][8];
+
 void wait_for_pawns() {
     Serial.println("Waiting for all pawns to be placed in starting positions...");
     bool all_pawns_placed = false;
@@ -84,6 +86,11 @@ char* detect_player_move(bool is_first_turn, volatile bool* playerEndedTurn = nu
     std::copy(&sensorBoard[0][0], &sensorBoard[0][0] + 64, &initialBoard[0][0]);
   }
     
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+          was_lifted[r][c] = false;
+      }
+    }
 
     #ifdef DEBUG
     Serial.println("------------------------");
@@ -101,29 +108,95 @@ char* detect_player_move(bool is_first_turn, volatile bool* playerEndedTurn = nu
   }
   #endif
 
-
   char* lastMove = nullptr;
   if (playerEndedTurn == nullptr) {
     while (stillDetectingMove()) {
         lastMove = get_changed_position();
     }   
   }
-  
 
   while (!*playerEndedTurn) {
     readSensors();
+
+    for (int r = 0; r < 8; r++) {
+        for (int c = 0; c < 8; c++) {
+            // If it started full, but is currently empty, mark it as lifted!
+            if (initialBoard[r][c] == true && sensorBoard[r][c] == false) {
+                was_lifted[r][c] = true;
+            }
+        }
+    }
+
     lastMove = get_changed_position();  
+    
     #ifdef DEBUG
-    if (lastMove != nullptr) { // ONLY print if a move was actually returned
+    if (lastMove != nullptr) { 
         Serial.print("Detected move: ");
         Serial.println(lastMove);
     }
     #endif
   }
+
   return lastMove;
+  
 }
 
 char* get_changed_position() {
+    static char pos[5]; // Array to hold "a2e4\0"
+    
+    // Set variables to -1 so we know if they haven't been found yet
+    int from_col = -1, from_row = -1;
+    int to_col = -1, to_row = -1;
+    
+    // Scan the entire 8x8 board for changes
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            
+            // FROM SQUARE LOGIC: Started full, is now empty
+            if (initialBoard[row][col] == true && sensorBoard[row][col] == false) {
+                if (from_col == -1) {
+                    from_col = col;
+                    from_row = row;
+                }
+            }
+            
+            // TO SQUARE LOGIC:
+            else if (sensorBoard[row][col] == true) {
+                
+                // Case 1 (Normal): Started empty, is now full
+                if (initialBoard[row][col] == false) {
+                    if (to_col == -1) {
+                        to_col = col;
+                        to_row = row;
+                    }
+                }
+                // Case 2 (Capture): Started full, was lifted mid-turn, is now full again
+                else if (initialBoard[row][col] == true && was_lifted[row][col] == true) {
+                    if (to_col == -1) {
+                        to_col = col;
+                        to_row = row;
+                    }
+                }
+            }
+        }
+    }
+
+    // --- THIS PART WAS MISSING IN YOUR CODE! ---
+    // Only construct and return the string if BOTH squares were found
+    if (from_col != -1 && to_col != -1) {
+        pos[0] = 'a' + from_col;
+        pos[1] = '1' + from_row;
+        pos[2] = 'a' + to_col;
+        pos[3] = '1' + to_row;
+        pos[4] = '\0'; // Null terminator to end the string
+        return pos;
+    }
+
+    // Return null if the full move hasn't been completed yet
+    return nullptr;
+}
+
+char* get_changed_position2() {
     static char pos[5]; // Array to hold "a2e4\0"
     
     // Set variables to -1 so we know if they haven't been found yet
