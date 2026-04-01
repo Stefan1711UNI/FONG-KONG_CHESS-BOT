@@ -9,9 +9,9 @@
 #define I 8000           // The value represents "Infinity" (used for Checkmate/King value) [cite: 3, 17]
 #define MYRAND_MAX 65535 // Limits the 16-bit pseudo-random generator for move variability
 
-using namespace std;
-using namespace chessbot;
 
+using namespace chessbot;
+using namespace std;
 /// @brief This function will return the ai move in the format of "e2e4" which means move piece from e2 to e4
 /// @param board current chess board state
 /// @param result output buffer (at least 5 chars) to store the move string
@@ -177,7 +177,7 @@ char translate_to_engine_bits(piece* p) {
 }
 
 
-static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side) {
+static void get_ai_move(std::array<std::array<piece*, 8>, 8> board, char* result, int side) {
     // 1. Reset Engine Globals for a fresh search
     N = 0;             // Reset node count [cite: 16]
     Z = 0;             // Reset recursion depth [cite: 33]
@@ -213,7 +213,7 @@ void sync_board_to_engine(std::array<std::array<piece*, 8>, 8> board) {
 
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            piece* p = board[y][x]; [cite: 100]
+            piece* p = board[y][x]; //[cite: 100]
             if (p != nullptr) {
                 // 2. Convert (x,y) to 0x88 index: (row << 4) + col [cite: 101]
                 int engineIndex = (y << 4) + x; 

@@ -4,17 +4,18 @@
 #include<array>
 #include <cstring>
 #include <Arduino.h>
+#include <Arduino_RouterBridge.h>
 
-using namespace std;
+
 using namespace chessbot;
 
-#define LEFT_BUTTON_PIN 2
-#define RIGHT_BUTTON_PIN 3
-#define PAGE_BUTTON_PIN 4
+#define LEFT_BUTTON_PIN 4
+#define RIGHT_BUTTON_PIN 7
+#define PAGE_BUTTON_PIN 11
 
 static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 static chessbot::move translate_move_to_coordinates(const char* stringMove);
-static void get_ai_move(array<array<piece*, 8>, 8> board, char* result, int side);
+static void get_ai_move(std::array<std::array<piece*, 8>, 8> board, char* result, int side);
 piece* get_piece_at_coordinates(int x, int y);
 char* detect_player_move(bool* playerEndedTurn);
 static bool try_move_piece(char* from, char* to, std::array<std::array<piece*, 8>, 8>  board);
@@ -23,6 +24,7 @@ void initBoard(std::array<std::array<piece*, 8>, 8> board);
 void showTurn(bool playerTurn);
 void pieceCaptured();
 void lcd_confirmMove(const char* move);
+void lcdSetup();
 bool winning_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 
 
@@ -53,8 +55,12 @@ void buttonPagePressed() {
 
 
 void setup() {
+    Bridge.begin();
+    Monitor.begin();
+    Monitor.println("Initializing...");
     configure();
     initBoard(board);
+    lcdSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(PAGE_BUTTON_PIN), buttonPagePressed, FALLING);
@@ -66,7 +72,7 @@ void loop() {
     while (check_game_state())
     {
         // get player move
-        showTurn(true);
+        //showTurn(true);
         char* player_move = detect_player_move(&player_confirm);
         player_confirm = false;
         
@@ -75,27 +81,27 @@ void loop() {
         piece* player_piece = get_piece_at_coordinates(player_chessbot_move.from_x, player_chessbot_move.from_y);
         bool valid = validate_piece_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
         if (get_piece_at_coordinates(player_chessbot_move.to_x, player_chessbot_move.to_y) != nullptr) {
-            pieceCaptured();
+            //pieceCaptured();
         }
 
         // update board state
         if (valid) {
             board[player_chessbot_move.to_y][player_chessbot_move.to_x] = player_piece;
             board[player_chessbot_move.from_y][player_chessbot_move.from_x] = nullptr;
-            if (winning_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board)) {
-                game_won = true;
-                break;
-            }
+            // if (winning_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board)) {
+            //     game_won = true;
+            //     break;
+            // }
         }
         // get ai move
         char ai_move[5];
         get_ai_move(board, ai_move, player_white ? 1 : 0);
-        showTurn(false);
+        //showTurn(false);
 
         chessbot::move ai_chessbot_move = translate_move_to_coordinates(ai_move);
         piece* ai_piece = get_piece_at_coordinates(ai_chessbot_move.from_x, ai_chessbot_move.from_y);
         if (get_piece_at_coordinates(ai_chessbot_move.to_x, ai_chessbot_move.to_y) != nullptr) {
-            pieceCaptured();
+           // pieceCaptured();
         }
         bool ai_valid = validate_piece_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
 
@@ -114,10 +120,10 @@ void loop() {
             if (piece_moved) {
                 board[ai_chessbot_move.to_y][ai_chessbot_move.to_x] = ai_piece;
                 board[ai_chessbot_move.from_y][ai_chessbot_move.from_x] = nullptr;
-                if (winning_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board)) {
-                    game_won = true;
-                    break;
-                }
+                // if (winning_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board)) {
+                //     game_won = true;
+                //     break;
+                // }
             }
         }
     }
@@ -127,35 +133,35 @@ void loop() {
 
 void handleButtons(int button, int current_page) {
     // 1. Cycle Page Button
-    if (digitalRead(buttonCyclePage) == LOW) {
-        currentPage = (currentPage + 1) % totalPages;
-        updateDisplay();
-        delay(300); // Debounce
-    }
+//     if (digitalRead(buttonCyclePage) == LOW) {
+//         currentPage = (currentPage + 1) % totalPages;
+//         updateDisplay();
+//         delay(300); // Debounce
+//     }
 
-    // 2. Restart Game Button
-if (digitalRead(buttonRestart) == LOW) {
-    lcd.clear();
-    lcd.print("Resetting Board");
+//     // 2. Restart Game Button
+// if (digitalRead(buttonRestart) == LOW) {
+//     lcd.clear();
+//     lcd.print("Resetting Board");
     
-    // Call the reset logic
-    reset_board(board);
+//     // Call the reset logic
+//     reset_board(board);
     
-    // Reset AI state 
-    playerTurn = true;
-    currentPage = 0;
+//     // Reset AI state 
+//     playerTurn = true;
+//     currentPage = 0;
     
-    updateDisplay();
-    //delay(500); // Prevent accidental double-reset
-}
+//     updateDisplay();
+//     //delay(500); // Prevent accidental double-reset
+// }
 
-    // 3. End Turn Button [cite: 22, 23]
-    if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
-        playerTurn = false;
-        updateDisplay();
-        // Trigger AI Move Logic here
-        delay(300); 
-    }
+//     // 3. End Turn Button [cite: 22, 23]
+//     if (digitalRead(buttonEndTurn) == LOW && playerTurn) {
+//         playerTurn = false;
+//         updateDisplay();
+//         // Trigger AI Move Logic here
+//         delay(300); 
+//     }
 }
 
     

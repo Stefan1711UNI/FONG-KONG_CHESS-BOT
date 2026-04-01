@@ -16,7 +16,7 @@ class CoreXYController {
     void calibrate();
 
     //Updates the 8x8 piece map
-    void updateBoardState(byte currentBoard[8][8]);
+    void updateBoardState(uint8_t currentBoard[8][8]);
 
     //Call when moving a single piece, excl. Knights
     bool movePiece(String startSquare, String endSquare);
@@ -35,7 +35,7 @@ class CoreXYController {
     MultiStepper steppers;
 
     //Board State Memory
-    byte boardState[8][8];  //1 = piece present, 0 = empty
+    uint8_t boardState[8][8];  //1 = piece present, 0 = empty
     float currentX;         //Curent X position mm 
     float currentY;         //Curent Y position mm
 

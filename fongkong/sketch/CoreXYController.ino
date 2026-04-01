@@ -8,7 +8,7 @@ CoreXYController::CoreXYController(float sqSize, float steps) {
 
 //Setup
 void CoreXYController::setUp(int pinStepA, int pinDirA, int pinStepB, int pinDirB, int pinMagnet, int pinLimitX, int pinLimitY, int pinEnable) {
-  Serial.println("BOARD: Hardware pins assigned.");
+  Monitor.println("BOARD: Hardware pins assigned.");
   stepA_Pin = pinStepA;
   dirA_Pin = pinDirA;
   stepB_Pin = pinStepB;
@@ -47,15 +47,15 @@ void CoreXYController::calibrate() {
   //LOGIC TODO
   currentX = 0;
   currentY = 0;
-  Serial.println("BOARD: Homing complete. At (0,0).");
+  Monitor.println("BOARD: Homing complete. At (0,0).");
 }
 
 //Move Piece, returns TRUE when action completed
-bool CoreXYController::movePiece(String startSquare, String endSquare) {
-  Serial.print("BOARD: Initiating move from ");
-  Serial.print(startSquare);
-  Serial.print(" to ");
-  Serial.println(endSquare);
+ bool CoreXYController::movePiece(String startSquare, String endSquare) {
+  Monitor.print("BOARD: Initiating move from ");
+  Monitor.print(startSquare);
+  Monitor.print(" to ");
+  Monitor.println(endSquare);
   //Grid coords
   int startGridX, startGridY;
   int endGridX, endGridY;
@@ -70,7 +70,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   gridToMM(endGridX, endGridY, endMM_X, endMM_Y);
 
   //---Move end effector to start position---
-  Serial.println("BOARD: Moving to start position...");
+  Monitor.println("BOARD: Moving to start position...");
   //Turns motor on
   enableMotors();
   //Turn magnet off
@@ -79,7 +79,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   executeCoreXYMovement(startMM_X, startMM_Y);
 
   //---COLLISION CHECK---
-  Serial.println("BOARD: Analyzing path for collisions...");
+  Monitor.println("BOARD: Analyzing path for collisions...");
   bool pathClear = true;
 
   int dx = endGridX - startGridX;
@@ -96,7 +96,7 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
   //Now we check if every square in the path is clear
   while (checkX != endGridX || checkY != endGridY) {
     if (boardState[checkX][checkY] == 1) {
-      Serial.println("BOARD: Obstacle detected mid-path! Path blocked.");
+      Monitor.println("BOARD: Obstacle detected mid-path! Path blocked.");
       pathClear = false;
       break; // Stop looking
     }
@@ -106,42 +106,42 @@ bool CoreXYController::movePiece(String startSquare, String endSquare) {
 
   //Checks if the end square is actually clear
   if (boardState[endGridX][endGridY] == 1) {
-    Serial.println("BOARD: ERROR - Target square is occupied!");
+    Monitor.println("BOARD: ERROR - Target square is occupied!");
     pathClear = false;
   }
 
   //---MOVE THE PIECE---
-  Serial.println("BOARD: Magnet ON.");
+  Monitor.println("BOARD: Magnet ON.");
   magnetON();
   delay(200); //Allow the magnet to fully engage
 
   //If the path is clear we can move to the end square, if its not clear we must run "routeAlongSeams"
   if (pathClear == true) {
-    Serial.println("BOARD: Path clear. Executing direct (straight) move.");
+    Monitor.println("BOARD: Path clear. Executing direct (straight) move.");
     executeCoreXYMovement(endMM_X, endMM_Y);
   } else {
-    Serial.println("BOARD: Path blocked. Routing along physical seams.");
+    Monitor.println("BOARD: Path blocked. Routing along physical seams.");
     routeAlongSeams(startMM_X, startMM_Y, endMM_X, endMM_Y);
   }
 
   //---MOVE FINISHED---
-  Serial.println("BOARD: Magnet OFF..");
+  Monitor.println("BOARD: Magnet OFF..");
   magnetOFF();
   delay(200);
 
   //Turn motors OFF to save power
   disableMotors();
 
-  Serial.println("BOARD: Piece delivered to target square.");
+  Monitor.println("BOARD: Piece delivered to target square.");
   return true; 
 }
 
 
 bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
-  Serial.print("BOARD: Initiating KNIGHT move from ");
-  Serial.print(startSquare);
-  Serial.print(" to ");
-  Serial.println(endSquare);
+  Monitor.print("BOARD: Initiating KNIGHT move from ");
+  Monitor.print(startSquare);
+  Monitor.print(" to ");
+  Monitor.println(endSquare);
 
   //Grid coords
   int startGridX, startGridY, endGridX, endGridY;
@@ -204,7 +204,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
 
   //Tier 1: Check if Pivot 1 and the final target square are both empty
   if (boardState[pivot1_X][pivot1_Y] == 0 && boardState[endGridX][endGridY] == 0) {
-    Serial.println("BOARD: Knight Path 1 (Diagonal First) is clear.");
+    Monitor.println("BOARD: Knight Path 1 (Diagonal First) is clear.");
     //Convert pivot grid to mm coords
     gridToMM(pivot1_X, pivot1_Y, pivotMM_X, pivotMM_Y);
     
@@ -215,7 +215,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   
   //Tier 2: Check if Pivot 2 and the final target square are both empty
   else if (boardState[pivot2_X][pivot2_Y] == 0 && boardState[endGridX][endGridY] == 0) {
-    Serial.println("BOARD: Knight Path 2 (Orthogonal First) is clear.");
+    Monitor.println("BOARD: Knight Path 2 (Orthogonal First) is clear.");
     //Convert pivot grid to mm coords
     gridToMM(pivot2_X, pivot2_Y, pivotMM_X, pivotMM_Y);
     
@@ -226,7 +226,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   
   //Tier 3: Fallback if both intermediate pivot squares are blocked by pieces
   else {
-    Serial.println("BOARD: Knight is boxed in. Routing along seams.");
+    Monitor.println("BOARD: Knight is boxed in. Routing along seams.");
     routeAlongSeams(startMM_X, startMM_Y, endMM_X, endMM_Y);
   }
 
@@ -238,7 +238,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   //Turn motors OFF to save power
   disableMotors();
 
-  Serial.println("BOARD: Knight move complete.");
+  Monitor.println("BOARD: Knight move complete.");
   return true;
 }
 
@@ -258,13 +258,13 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
   positions[1] = targetStepsB; // Motor B
 
   //DEBUGING
-  Serial.print("   -> Driving Motors to: [");
-  Serial.print(mmToAlgebraic(targetX, targetY));
-  Serial.print("]  (X=");
-  Serial.print(targetX);
-  Serial.print("mm, Y=");
-  Serial.print(targetY);
-  Serial.println("mm)");
+  Monitor.print("   -> Driving Motors to: [");
+  Monitor.print(mmToAlgebraic(targetX, targetY));
+  Monitor.print("]  (X=");
+  Monitor.print(targetX);
+  Monitor.print("mm, Y=");
+  Monitor.print(targetY);
+  Monitor.println("mm)");
 
   //Call motors
   steppers.moveTo(positions);
@@ -278,7 +278,7 @@ void CoreXYController::executeCoreXYMovement(float targetX, float targetY){
 }
 
 
-void CoreXYController::updateBoardState(byte currentBoard[8][8]) {
+void CoreXYController::updateBoardState(uint8_t currentBoard[8][8]) {
   memcpy(boardState, currentBoard, sizeof(boardState));
 }
 
