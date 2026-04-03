@@ -1,9 +1,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-// #include <hd44780.h>
-// #include <hd44780ioClass/hd44780_I2Cexp.h>
 
-//hd44780_I2Cexp lcd;
+LiquidCrystal_I2C lcd(0x27, 16, 2);   
 
 // Button Pin Definitions 
 // const int buttonCyclePage = 2;  // Changes what is displayed on screen
@@ -14,24 +12,14 @@
 bool playerTurn = true;
 int currentPage = 0; 
 const int totalPages = 3;
-LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void lcdSetup() {
     lcd.init();
     lcd.backlight();
     lcd.setCursor(0, 0);
-    lcd.print("Hello");
-
-    // pinMode(buttonCyclePage, INPUT_PULLUP); 
-    // pinMode(buttonRestart, INPUT_PULLUP);   
-    // pinMode(buttonEndTurn, INPUT_PULLUP);    
-
-    //lcd.begin(16, 2); 
-    //lcd.backlight();
-    
-    //lcd.print("ChessBot v1.0");
-    //delay(1000);
-    //updateDisplay();
+    lcd.print("FONG KONG Ready");
+    delay(2000);
+    lcd.clear();
 }
 
 void updateDisplay() {
@@ -57,6 +45,15 @@ void updateDisplay() {
     //}
 }
 
+void lcd_moveRejected(){
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Invalid Move");
+    lcd.setCursor(0, 1);
+    lcd.print("Try again");
+}
+
 void lcd_confirmMove(const char* move, bool is_ai_move) {
     lcd.clear();
     
@@ -70,6 +67,14 @@ void lcd_confirmMove(const char* move, bool is_ai_move) {
     lcd.print(move);
     delay(1000); // Display for 1 second
 }
+
+
+void pieceCaptured() {
+    lcd.clear();
+    lcd.print("Piece Captured!");
+    delay(1000); // Display for 1 second
+}
+
 
 void lcd_aiMove() {
   lcd.clear();
@@ -86,15 +91,4 @@ void lcd_wrongMove() {
   lcd.clear();
   lcd.print("Error: Move was incomplete.");
 
-}
-
-void lcd_moveRejected() {
-  lcd.clear();
-  lcd.print("Move Rejected!");
-}
-
-void pieceCaptured() {
-    //lcd.clear();
-    //lcd.print("Piece Captured!");
-    //delay(1000); // Display for 1 second
 }
