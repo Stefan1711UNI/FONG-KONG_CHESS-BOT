@@ -1,8 +1,7 @@
 #include <Wire.h>
-// #include <hd44780.h>
-// #include <hd44780ioClass/hd44780_I2Cexp.h>
+#include <LiquidCrystal_I2C.h>
 
-//hd44780_I2Cexp lcd;
+LiquidCrystal_I2C lcd(0x27, 16, 2);   
 
 // Button Pin Definitions 
 // const int buttonCyclePage = 2;  // Changes what is displayed on screen
@@ -15,16 +14,12 @@ int currentPage = 0;
 const int totalPages = 3;
 
 void lcdSetup() {
-    // pinMode(buttonCyclePage, INPUT_PULLUP); 
-    // pinMode(buttonRestart, INPUT_PULLUP);   
-    // pinMode(buttonEndTurn, INPUT_PULLUP);    
-
-    //lcd.begin(16, 2); 
-    //lcd.backlight();
-    
-    //lcd.print("ChessBot v1.0");
-    //delay(1000);
-    //updateDisplay();
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("FONG KONG Ready");
+    delay(2000);
+    lcd.clear();
 }
 
 void updateDisplay() {
@@ -50,16 +45,65 @@ void updateDisplay() {
     //}
 }
 
-void lcd_confirmMove(const char* move) {
-    //lcd.clear();
-    //lcd.print("Confirming Move:");
-    //lcd.setCursor(0, 1);
-    //lcd.print(move);
-    //delay(1000); // Display for 1 second
+void lcd_moveRejected(){
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Invalid Move");
+    lcd.setCursor(0, 1);
+    lcd.print("Try again");
 }
 
+void lcd_confirmMove(const char* move, bool is_ai_move) {
+    lcd.clear();
+    
+    if (is_ai_move) {
+        lcd.print("confirm ai move:");
+    } else {
+        lcd.print("confirm player move:");
+    }
+
+    lcd.setCursor(0, 1);
+    lcd.print(move);
+    delay(1000); // Display for 1 second
+}
+
+
 void pieceCaptured() {
-    //lcd.clear();
-    //lcd.print("Piece Captured!");
-    //delay(1000); // Display for 1 second
+    lcd.clear();
+    lcd.print("Piece Captured!");
+    delay(1000); // Display for 1 second
+}
+
+
+void lcd_aiMove() {
+  lcd.clear();
+  lcd.print("AI is thinking...");
+
+}
+
+void lcd_playerMove() {
+  lcd.clear();
+  lcd.print("Your turn!");
+}
+
+void lcd_check(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECK!");
+}
+
+void lcd_checkMatePlayer(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECKMATE");
+  lcd.setCursor(0, 1);
+  lcd.print("You Win!");
+}
+void lcd_checkMateAI(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECKMATE");
+  lcd.setCursor(0, 1);
+  lcd.print("AI Wins!");
 }

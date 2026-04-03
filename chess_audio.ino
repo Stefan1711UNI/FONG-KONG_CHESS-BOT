@@ -2,8 +2,8 @@
 
 // DFRobotDFPlayerMini myDFPlayer;
 
-// void audioSetup() {
-//   // Monitor.begin(115200);
+//void audioSetup() {
+    // Monitor.begin(115200);
 //   // Monitor1.begin(9600); // Hardware Monitor for DFPlayer on Uno R4
 
 //   Monitor.println(F("Initializing DFPlayer..."));

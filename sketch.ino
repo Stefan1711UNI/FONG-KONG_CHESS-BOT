@@ -1,7 +1,7 @@
 //#include "validation/validation.h"
 #include <stdint.h>
 #include "types.h"
-#include<array>
+#include <array>
 #include <cstring>
 #include <Arduino.h>
 //#include <Arduino_RouterBridge.h>
@@ -23,13 +23,24 @@ void configure();
 void initBoard(std::array<std::array<piece*, 8>, 8>& board);
 void showTurn(bool playerTurn);
 void pieceCaptured();
+void boardSetup();
+void sensorSetup();
 //void lcd_confirmMove(const char* move);
-//void lcdSetup();
+void lcdSetup();
 bool winning_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 void wait_for_pawns();
-
-
-
+void lcd_aiMove();
+void lcd_playerMove();
+void lcd_wrongMove();
+void lcd_moveRejected();
+void lcd_confirmMove(const char* move, bool is_ai_move);
+bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board);
+bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
+void pieceCaptured();
+void lcd_check();
+void lcd_checkMatePlayer();
+void lcd_checkMateAI();
+bool is_in_check(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
    
 
 std::array<std::array<piece*, 8>, 8>  board; 
@@ -42,16 +53,28 @@ bool left_button_pressed = false;
 bool right_button_pressed = false;
 bool page_button_pressed = false;
 
+const unsigned long debounce_delay = 250;
+
+volatile unsigned long last_left_press = 0;
 void buttonLeftPressed() {
-    left_button_pressed = true;
+    unsigned long current_time = millis();
+    if (current_time - last_left_press > debounce_delay) {
+        left_button_pressed = true;
+        last_left_press = current_time;
+    }
 }
 
+volatile unsigned long last_right_press = 0;
 void buttonRightPressed() {
-    right_button_pressed = true;
+    unsigned long current_time = millis();
+    if (current_time - last_right_press > debounce_delay) {
+        right_button_pressed = true;
+        last_right_press = current_time;
+    }
 }
 
 volatile unsigned long last_page_press = 0;
-const unsigned long debounce_delay = 250;
+
 void buttonPagePressed() {
     unsigned long current_time = millis();
     if (current_time - last_page_press > debounce_delay) {
@@ -109,8 +132,9 @@ void setup() {
     Serial.println("Initializing...");
     configure();
     initBoard(board);
-    sensorSetup();
-    //lcdSetup();
+    //sensorSetup();
+    Serial.println("Starting LCD...");
+    lcdSetup();
     boardSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
@@ -129,12 +153,15 @@ void loop() {
 
         char* player_move = nullptr;
 
+        lcd_playerMove();
+        //playPlayerTurnAudio();
+
         if (turn == 0) {
             Serial.println("First loop");
             wait_for_pawns();
             player_confirm = false; 
             player_move = detect_player_move(true, &player_confirm);
-        } else{
+        } else {
             player_confirm = false;
             player_move = detect_player_move(false, &player_confirm);
         }
@@ -150,16 +177,25 @@ void loop() {
         // validate player move
         chessbot::move player_chessbot_move = translate_move_to_coordinates(player_move);
         piece* player_piece = get_piece_at_coordinates(player_chessbot_move.from_x, player_chessbot_move.from_y);
-        bool valid = validate_piece_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
+        Serial.println("Player piece:" + String(player_piece->piece_type));
+        Serial.println("At coordinates:" + String(player_piece->x) + "," + String(player_piece->y));
+        
+        bool valid = is_move_legal(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
         Serial.println(valid);
 
         if (!valid) {
+            lcd_moveRejected();
+            //playIllegalMoveAudio();
             Serial.println("Move rejected. Try again.");
             continue; // Go back to the top and let the player try again
         }
-
+        
+        lcd_confirmMove(player_move, false);
+        
         if (get_piece_at_coordinates(player_chessbot_move.to_x, player_chessbot_move.to_y) != nullptr) {
             //pieceCaptured();
+            //playPlayerTakesAiPieceAudio();
+            Serial.println("User took piece.");
         }
 
         // update board state
@@ -172,7 +208,18 @@ void loop() {
             //     game_won = true;
             //     break;
             // }
-
+            if (is_checkmate(!player_white, board)) {
+            lcd_checkMatePlayer();
+            //playCheckMatePlayerAudio();
+            game_won = true;
+            break;
+            }
+            // Check if AI is in check
+            if (is_in_check(!player_white, board)) {
+                lcd_check();
+                //playCheckAIAudio();
+                delay(1000);
+            }
 
         //here
         print_internal_board();
@@ -180,14 +227,20 @@ void loop() {
         // get ai move
         Serial.println("AI move");
         char ai_move[5];
+        lcd_aiMove();
+        //playAiTurnAudio();
+        delay(1500);
+        //playAiThinkingAudio();
+
         get_ai_move(board, ai_move, player_white ? 1 : 0);
         //showTurn(false);
         Serial.println(ai_move);
+        lcd_confirmMove(ai_move, true);
         chessbot::move ai_chessbot_move = translate_move_to_coordinates(ai_move);
         piece* ai_piece = get_piece_at_coordinates(ai_chessbot_move.from_x, ai_chessbot_move.from_y);
 
         
-        bool ai_valid = validate_piece_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
+        bool ai_valid = is_move_legal(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
 
         // update board state
         if (ai_valid) {
@@ -195,6 +248,12 @@ void loop() {
             char to[2];
             strncpy(from, ai_move, 2);
             strncpy(to, ai_move + 2, 2);
+
+            if (get_piece_at_coordinates(ai_chessbot_move.to_x, ai_chessbot_move.to_y) != nullptr) {
+                pieceCaptured();
+                //playAiTakesPlayerPieceAudio();
+            }
+
             bool piece_moved = try_move_piece(from,to, board);
 
             player_confirm = false; // Reset it before the wait!
@@ -214,10 +273,26 @@ void loop() {
                 //     game_won = true;
                 //     break;
                 // }
+                // Check if player is in check
+            if (is_checkmate(player_white, board)) {
+            lcd_checkMateAI();
+            //playCheckMateAIWinAudio();
+            game_won = true;
+            break;
+            }
+            if (is_in_check(player_white, board)) {
+            lcd_check();
+            //playCheckPlayerAudio();
+            delay(1000);
+            }
             }
         } else {
             Serial.println("AI FAILED");
         }
+        
+        // Serial.println("board after AI move");
+        // print_internal_board();
+
         turn++;
     }
     
@@ -339,9 +414,44 @@ void configure() {
 }
 
 bool check_game_state() {
-    return !game_won;
+    bool white_won = is_checkmate(true, board);
+    bool black_won = is_checkmate(false, board);
+    return !white_won || black_won;
 }
 
 piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {
     return board[y][x];
 }
+
+
+// ==========================================
+// AUDIO FUNCTIONS
+// ==========================================
+// void audioSetup() {
+//     Serial.println("DFPlayer setup.");
+//     DF_SERIAL.begin(9600);
+
+//     if (dfPlayer.begin(DF_SERIAL, false, false)) {
+//         Serial.println("DFPlayer detected.");
+//         audio_ready = true;
+//         dfPlayer.volume(10); // Set volume 0 to 30
+//         delay(300);
+//     } else {
+//         audio_ready = false;
+//         Serial.println("DFPlayer not detected.");
+//     }
+// }
+
+// void playCalibrationAudio() { if (audio_ready) dfPlayer.playMp3Folder(1); }
+// void playAiThinkingAudio() { if (audio_ready) dfPlayer.playMp3Folder(2); }
+// void playPlayerTakesAiPieceAudio() { if (audio_ready) dfPlayer.playMp3Folder(3); }
+// void playAiTakesPlayerPieceAudio() { if (audio_ready) dfPlayer.playMp3Folder(4); }
+// void playStartupAudio() { if (audio_ready) dfPlayer.playMp3Folder(5); }
+// void playIllegalMoveAudio() { if (audio_ready) dfPlayer.playMp3Folder(6); }
+// void playAiTurnAudio() { if (audio_ready) dfPlayer.playMp3Folder(7); }
+// void playPlayerTurnAudio() { if (audio_ready) dfPlayer.playMp3Folder(8); }
+// void playCheckMatePlayerAudio() { if (audio_ready) dfPlayer.playMp3Folder(9); }
+// void playCheckPlayerAudio() { if (audio_ready) dfPlayer.playMp3Folder(10); }
+// void playCheckAI2Audio() { if (audio_ready) dfPlayer.playMp3Folder(11); }
+// void playCheckAIAudio() { if (audio_ready) dfPlayer.playMp3Folder(12); }
+// void playCheckMateAIWinAudio() { if (audio_ready) dfPlayer.playMp3Folder(13); }

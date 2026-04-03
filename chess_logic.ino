@@ -1,7 +1,10 @@
+
 #include "types.h"
 #include <array>
 #include <stdlib.h>
 using namespace chessbot;
+
+bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board);
 
 piece* get_piece_at_coordinates(int x, int y, std::array<std::array<piece*, 8>, 8> board) {
     return board[y][x];
@@ -11,27 +14,7 @@ bool is_on_board(int x, int y) {
     return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
 }
 
-static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board) {
-    if (chessPiece == nullptr) {
-        return false;
-    }
-    switch (chessPiece->piece_type) {
-        case pieceType::PAWN:
-            return validate_pawn_move(chessPiece, x, y, board);
-        case pieceType::ROOK:
-            return validate_rook_move(chessPiece, x, y, board);
-        case pieceType::KNIGHT:
-            return validate_knight_move(chessPiece, x, y, board);
-        case pieceType::BISHOP:
-            return validate_bishop_move(chessPiece, x, y, board);
-        case pieceType::QUEEN:
-            return validate_queen_move(chessPiece, x, y, board);
-        case pieceType::KING:
-            return validate_king_move(chessPiece, x, y, board);
-        default:
-            return false;
-    }
-}
+
 
 static bool validate_pawn_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8> board) {
     piece* target = get_piece_at_coordinates(x, y, board);
@@ -174,36 +157,36 @@ static bool validate_king_move(piece* chessPiece, int x, int y, std::array<std::
     return false;
 }
 
-void execute_move(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8>& board) {
-    // 1. Check for Castling (King moving 2 squares horizontally) 
-    if (p->piece_type == pieceType::KING && abs(toX - p->x) == 2) {
-        int rookFromX = (toX > p->x) ? 7 : 0; 
-        int rookToX = (toX > p->x) ? 5 : 3; 
+// void execute_move(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8>& board) {
+//     // 1. Check for Castling (King moving 2 squares horizontally) 
+//     if (p->piece_type == pieceType::KING && abs(toX - p->x) == 2) {
+//         int rookFromX = (toX > p->x) ? 7 : 0; 
+//         int rookToX = (toX > p->x) ? 5 : 3; 
         
-        piece* rook = board[p->y][rookFromX]; 
-        if (rook != nullptr) {
-            board[p->y][rookToX] = rook; 
-            board[p->y][rookFromX] = nullptr; 
-            rook->x = rookToX; 
-            rook->has_moved = true; 
-        }
-    }
+//         piece* rook = board[p->y][rookFromX]; 
+//         if (rook != nullptr) {
+//             board[p->y][rookToX] = rook; 
+//             board[p->y][rookFromX] = nullptr; 
+//             rook->x = rookToX; 
+//             rook->has_moved = true; 
+//         }
+//     }
 
-    // 2. Standard Move Execution 
-    board[p->y][p->x] = nullptr; 
-    board[toY][toX] = p; 
-    p->x = toX; 
-    p->y = toY; 
-    p->has_moved = true; 
+//     // 2. Standard Move Execution 
+//     board[p->y][p->x] = nullptr; 
+//     board[toY][toX] = p; 
+//     p->x = toX; 
+//     p->y = toY; 
+//     p->has_moved = true; 
 
-    // 3. Pawn Promotion Logic (New) 
-    if (p->piece_type == pieceType::PAWN) {
-        // White reaches top (row 7) or Black reaches bottom (row 0) [cite: 142]
-        if ((p->is_white && toY == 7) || (!p->is_white && toY == 0)) {
-            p->piece_type = pieceType::QUEEN; // Automatically promote to Queen [cite: 78, 108]
-        }
-    }
-}
+//     // 3. Pawn Promotion Logic (New) 
+//     if (p->piece_type == pieceType::PAWN) {
+//         // White reaches top (row 7) or Black reaches bottom (row 0) [cite: 142]
+//         if ((p->is_white && toY == 7) || (!p->is_white && toY == 0)) {
+//             p->piece_type = pieceType::QUEEN; // Automatically promote to Queen [cite: 78, 108]
+//         }
+//     }
+// }
 
 bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board) {
     for (int y = 0; y < 8; y++) {
@@ -222,7 +205,8 @@ bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array
 }
 
 bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board) {
-    if (!is_on_board(toX, toY)) return false;
+    //if (!is_on_board(toX, toY)) return false;
+    
     if (!validate_piece_move(p, toX, toY, board)) return false; 
 
     // Create a "Pretend" board to test if the move is safe for the King
@@ -370,4 +354,27 @@ bool is_stalemate(bool isWhite, std::array<std::array<piece*, 8>, 8> board) {
 
     // 5. No legal moves were found, and the king is not in check
     return true; 
+}
+
+static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board) {
+    if (chessPiece == nullptr) {
+        return false;
+    }
+
+    switch (chessPiece->piece_type) {
+        case pieceType::PAWN:
+            return validate_pawn_move(chessPiece, x, y, board);
+        case pieceType::ROOK:
+            return validate_rook_move(chessPiece, x, y, board);
+        case pieceType::KNIGHT:
+            return validate_knight_move(chessPiece, x, y, board);
+        case pieceType::BISHOP:
+            return validate_bishop_move(chessPiece, x, y, board);
+        case pieceType::QUEEN:
+            return validate_queen_move(chessPiece, x, y, board);
+        case pieceType::KING:
+            return validate_king_move(chessPiece, x, y, board);
+        default:
+            return false;
+    }
 }

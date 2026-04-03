@@ -110,8 +110,8 @@ void CoreXYController::calibrate() {
   Serial.println("BOARD: Moving from switches to the center of Square A1...");
 
   //---!!!THIS IS THE DISTANCE FROM THE LIMIT SWITCHES TO THE CENTER OF A1!!!---
-  float offsetA1_X_mm = 310.0;  //350
-  float offsetA1_Y_mm = 10.0; 
+  float offsetA1_X_mm = 315.0;  //350
+  float offsetA1_Y_mm = 7.0; 
 
   //Convert mm to steps
   long offsetStepsX = round(offsetA1_X_mm * stepsPerMM);
@@ -247,7 +247,7 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
   //Move to mm coords of the start position
   executeCoreXYMovement(startMM_X, startMM_Y);
   magnetON();
-  delay(200); //Allow the magnet to fully engage
+  delay(1000); //Allow the magnet to fully engage
 
   //---CALCULATE THE PIVOTS---
   //A Knight cannot move in a straight diagonal line from the start to the end square, without clipping other pieces.
@@ -307,6 +307,55 @@ bool CoreXYController::moveKnightPiece(String startSquare, String endSquare) {
     executeCoreXYMovement(pivotMM_X, pivotMM_Y);
     executeCoreXYMovement(endMM_X, endMM_Y);
   } 
+
+  else if (boardState[endGridY][endGridX] == nullptr){
+    Serial.println("BOARD: Pivot blocked. Executing 'Nudge' protocol!");
+
+    int nudgeX = pivot2_X;
+    int nudgeY = pivot2_Y;
+    if (abs(dx) > abs(dy)) {
+      nudgeX += stepX; // Push further along X
+    } else {
+      nudgeY += stepY; // Push further along Y
+    }
+
+    // 2. Check if the "nudge" square is physically on the board AND empty
+    if (nudgeX >= 0 && nudgeX <= 7 && nudgeY >= 0 && nudgeY <= 7 && boardState[nudgeY][nudgeX] == nullptr) {
+      
+      // We must DROP the Knight first! (Because we grabbed it at the start of the function)
+      magnetOFF(); 
+      delay(200);
+
+      float pMM_X, pMM_Y, nMM_X, nMM_Y;
+      gridToMM(pivot2_X, pivot2_Y, pMM_X, pMM_Y);
+      gridToMM(nudgeX, nudgeY, nMM_X, nMM_Y);
+
+      Serial.println("BOARD: 1. Pushing blocker forward.");
+      executeCoreXYMovement(pMM_X, pMM_Y);
+      magnetON(); 
+      delay(200);
+      executeCoreXYMovement(nMM_X, nMM_Y); // Push it!
+      magnetOFF(); 
+      delay(200);
+
+      Serial.println("BOARD: 2. Driving Knight through the gap.");
+      executeCoreXYMovement(startMM_X, startMM_Y); // Go back to Knight
+      magnetON(); 
+      delay(200);
+      executeCoreXYMovement(pMM_X, pMM_Y);         // Drive to the now-empty pivot
+      executeCoreXYMovement(endMM_X, endMM_Y);     // Drive to final target
+      magnetOFF(); 
+      delay(200);
+
+      Serial.println("BOARD: 3. Pulling blocker back to original square.");
+      executeCoreXYMovement(nMM_X, nMM_Y); // Go to nudged piece
+      magnetON(); 
+      delay(200);
+      executeCoreXYMovement(pMM_X, pMM_Y); // Pull it back
+      magnetOFF(); 
+      delay(200);
+    }
+  }
   
   //Option 3: Fallback if both intermediate pivot squares are blocked by pieces
   else {
