@@ -3,6 +3,8 @@
 #include <stdlib.h>
 using namespace chessbot;
 
+bool is_square_attacked(int targetX, int targetY, bool whiteAttacker, std::array<std::array<piece*, 8>, 8> board);
+
 piece* get_piece_at_coordinates(int x, int y, std::array<std::array<piece*, 8>, 8> board) {
     return board[y][x];
 }
@@ -11,28 +13,7 @@ bool is_on_board(int x, int y) {
     return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
 }
 
-static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board) {
-    if (chessPiece == nullptr) {
-        return false;
-    }
 
-    switch (chessPiece->piece_type) {
-        case pieceType::PAWN:
-            return validate_pawn_move(chessPiece, x, y, board);
-        case pieceType::ROOK:
-            return validate_rook_move(chessPiece, x, y, board);
-        case pieceType::KNIGHT:
-            return validate_knight_move(chessPiece, x, y, board);
-        case pieceType::BISHOP:
-            return validate_bishop_move(chessPiece, x, y, board);
-        case pieceType::QUEEN:
-            return validate_queen_move(chessPiece, x, y, board);
-        case pieceType::KING:
-            return validate_king_move(chessPiece, x, y, board);
-        default:
-            return false;
-    }
-}
 
 static bool validate_pawn_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8> board) {
     piece* target = get_piece_at_coordinates(x, y, board);
@@ -372,4 +353,27 @@ bool is_stalemate(bool isWhite, std::array<std::array<piece*, 8>, 8> board) {
 
     // 5. No legal moves were found, and the king is not in check
     return true; 
+}
+
+static bool validate_piece_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board) {
+    if (chessPiece == nullptr) {
+        return false;
+    }
+
+    switch (chessPiece->piece_type) {
+        case pieceType::PAWN:
+            return validate_pawn_move(chessPiece, x, y, board);
+        case pieceType::ROOK:
+            return validate_rook_move(chessPiece, x, y, board);
+        case pieceType::KNIGHT:
+            return validate_knight_move(chessPiece, x, y, board);
+        case pieceType::BISHOP:
+            return validate_bishop_move(chessPiece, x, y, board);
+        case pieceType::QUEEN:
+            return validate_queen_move(chessPiece, x, y, board);
+        case pieceType::KING:
+            return validate_king_move(chessPiece, x, y, board);
+        default:
+            return false;
+    }
 }

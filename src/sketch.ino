@@ -135,7 +135,6 @@ void setup() {
     initBoard(board);
     //sensorSetup();
     lcdSetup();
-    bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board)
     boardSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
@@ -177,6 +176,9 @@ void loop() {
         // validate player move
         chessbot::move player_chessbot_move = translate_move_to_coordinates(player_move);
         piece* player_piece = get_piece_at_coordinates(player_chessbot_move.from_x, player_chessbot_move.from_y);
+        Serial.println("Player piece:" + String(player_piece->piece_type));
+        Serial.println("At coordinates:" + String(player_piece->x) + "," + String(player_piece->y));
+        
         bool valid = is_move_legal(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
         Serial.println(valid);
 
@@ -269,6 +271,10 @@ void loop() {
         } else {
             Serial.println("AI FAILED");
         }
+        
+        // Serial.println("board after AI move");
+        // print_internal_board();
+
         turn++;
     }
     
@@ -392,7 +398,7 @@ void configure() {
 bool check_game_state() {
     bool white_won = is_checkmate(true, board);
     bool black_won = is_checkmate(false, board);
-    return white_won || black_won;
+    return !white_won || black_won;
 }
 
 piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {
