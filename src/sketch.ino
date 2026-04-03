@@ -5,7 +5,12 @@
 #include <cstring>
 #include <Arduino.h>
 //#include <Arduino_RouterBridge.h>
+#include <DFRobotDFPlayerMini.h>
 
+#define DF_SERIAL Serial1
+
+DFRobotDFPlayerMini dfPlayer;
+bool audio_ready = false;
 
 using namespace chessbot;
 
@@ -41,7 +46,21 @@ void lcd_check();
 void lcd_checkMatePlayer();
 void lcd_checkMateAI();
 bool is_in_check(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
-
+//audio
+void audioSetup();
+void playCalibrationAudio();
+void playAiThinkingAudio();
+void playPlayerTakesAiPieceAudio();
+void playAiTakesPlayerPieceAudio();
+void playStartupAudio();
+void playIllegalMoveAudio();
+void playAiTurnAudio();
+void playPlayerTurnAudio();
+void playCheckMatePlayerAudio();
+void playCheckPlayerAudio();
+void playCheckAIAudio();
+void playCheckAI2Audio();
+void playCheckMateAIWinAudio();
    
 
 std::array<std::array<piece*, 8>, 8>  board; 
@@ -128,14 +147,18 @@ void setup() {
     pinMode(RIGHT_BUTTON_PIN, INPUT_PULLUP);
     pinMode(PAGE_BUTTON_PIN, INPUT_PULLUP);
 
-    //Bridge.begin();
     Serial.begin(9600);
     Serial.println("Initializing...");
+
     configure();
     initBoard(board);
-    //sensorSetup();
+
     lcdSetup();
+    audioSetup();
+    playStartupAudio();
+
     boardSetup();
+
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(PAGE_BUTTON_PIN), buttonPagePressed, FALLING);
@@ -154,7 +177,7 @@ void loop() {
         char* player_move = nullptr;
 
         lcd_playerMove();
-
+        playPlayerTurnAudio();
         if (turn == 0) {
             Serial.println("First loop");
             wait_for_pawns();
@@ -184,6 +207,7 @@ void loop() {
 
         if (!valid) {
             lcd_moveRejected();
+            playIllegalMoveAudio();
             Serial.println("Move rejected. Try again.");
             continue; // Go back to the top and let the player try again
         }
@@ -191,7 +215,8 @@ void loop() {
         lcd_confirmMove(player_move, false);
         
         if (get_piece_at_coordinates(player_chessbot_move.to_x, player_chessbot_move.to_y) != nullptr) {
-            //pieceCaptured();
+            pieceCaptured();
+            playPlayerTakesAiPieceAudio();
         }
 
         // update board state
@@ -206,12 +231,14 @@ void loop() {
             // }
             if (is_checkmate(!player_white, board)) {
             lcd_checkMatePlayer();
+            playCheckMatePlayerAudio();
             game_won = true;
             break;
             }
             // Check if AI is in check
             if (is_in_check(!player_white, board)) {
                 lcd_check();
+                playCheckAIAudio();
                 delay(1000);
             }
 
@@ -222,8 +249,10 @@ void loop() {
         Serial.println("AI move");
         char ai_move[5];
         lcd_aiMove();
+        playAiTurnAudio();
+        delay(1500);
+        playAiThinkingAudio();
         get_ai_move(board, ai_move, player_white ? 1 : 0);
-        //showTurn(false);
         Serial.println(ai_move);
         lcd_confirmMove(ai_move, true);
         chessbot::move ai_chessbot_move = translate_move_to_coordinates(ai_move);
@@ -238,6 +267,10 @@ void loop() {
             char to[2];
             strncpy(from, ai_move, 2);
             strncpy(to, ai_move + 2, 2);
+            if (get_piece_at_coordinates(ai_chessbot_move.to_x, ai_chessbot_move.to_y) != nullptr) {
+            pieceCaptured();
+            playAiTakesPlayerPieceAudio();
+            }
             bool piece_moved = try_move_piece(from,to, board);
 
             player_confirm = false; // Reset it before the wait!
@@ -260,11 +293,13 @@ void loop() {
                 // Check if player is in check
             if (is_checkmate(player_white, board)) {
             lcd_checkMateAI();
+            playCheckMateAIWinAudio();
             game_won = true;
             break;
             }
             if (is_in_check(player_white, board)) {
             lcd_check();
+            playCheckPlayerAudio();
             delay(1000);
             }
             }
@@ -403,4 +438,92 @@ bool check_game_state() {
 
 piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {
     return board[y][x];
+}
+
+void audioSetup() {
+    DF_SERIAL.begin(9600);
+
+    if (dfPlayer.begin(DF_SERIAL)) {
+        audio_ready = true;
+        dfPlayer.volume(25);
+        delay(300);
+    } else {
+        audio_ready = false;
+        Serial.println("DFPlayer not detected.");
+    }
+}    dfSerial.begin(9600);
+
+    if (dfPlayer.begin(dfSerial)) {
+        audio_ready = true;
+        dfPlayer.volume(25);   // 0 a 30
+        delay(300);
+    } else {
+        audio_ready = false;
+        Serial.println("DFPlayer not detected.");
+    }
+}
+
+void playCalibrationAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(1);
+}
+
+void playAiThinkingAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(2);
+}
+
+void playPlayerTakesAiPieceAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(3);
+}
+
+void playAiTakesPlayerPieceAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(4);
+}
+
+void playStartupAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(5);
+}
+
+void playIllegalMoveAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(6);
+}
+
+void playAiTurnAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(7);
+}
+
+void playPlayerTurnAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(8);
+}
+
+void playCheckMatePlayerAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(9);
+}
+
+void playCheckPlayerAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(10);
+}
+
+void playCheckAI2Audio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(11);
+}
+
+void playCheckAIAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(12);
+}
+
+void playCheckMateAIWinAudio() {
+    if (!audio_ready) return;
+    dfPlayer.playMp3Folder(13);
 }
