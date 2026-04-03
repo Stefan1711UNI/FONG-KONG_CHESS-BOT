@@ -92,3 +92,24 @@ void lcd_wrongMove() {
   lcd.print("Error: Move was incomplete.");
 
 }
+
+void lcd_check(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECK!");
+}
+
+void lcd_checkMatePlayer(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECKMATE");
+  lcd.setCursor(0, 1);
+  lcd.print("You Win!");
+}
+void lcd_checkMateAI(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CHECKMATE");
+  lcd.setCursor(0, 1);
+  lcd.print("AI Wins!");
+}
