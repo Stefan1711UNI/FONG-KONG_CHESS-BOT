@@ -1,7 +1,7 @@
 //#include "validation/validation.h"
 #include <stdint.h>
 #include "types.h"
-#include<array>
+#include <array>
 #include <cstring>
 #include <Arduino.h>
 //#include <Arduino_RouterBridge.h>
@@ -23,10 +23,20 @@ void configure();
 void initBoard(std::array<std::array<piece*, 8>, 8>& board);
 void showTurn(bool playerTurn);
 void pieceCaptured();
+void boardSetup();
+void sensorSetup();
 //void lcd_confirmMove(const char* move);
-//void lcdSetup();
+void lcdSetup();
 bool winning_move(piece* chessPiece, int x, int y, std::array<std::array<piece*, 8>, 8>  board);
 void wait_for_pawns();
+void lcd_aiMove();
+void lcd_playerMove();
+void lcd_wrongMove();
+void lcd_moveRejected();
+void lcd_confirmMove(const char* move, bool is_ai_move);
+bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board);
+bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
+
 
 
 
@@ -42,16 +52,28 @@ bool left_button_pressed = false;
 bool right_button_pressed = false;
 bool page_button_pressed = false;
 
+const unsigned long debounce_delay = 250;
+
+volatile unsigned long last_left_press = 0;
 void buttonLeftPressed() {
-    left_button_pressed = true;
+    unsigned long current_time = millis();
+    if (current_time - last_left_press > debounce_delay) {
+        left_button_pressed = true;
+        last_left_press = current_time;
+    }
 }
 
+volatile unsigned long last_right_press = 0;
 void buttonRightPressed() {
-    right_button_pressed = true;
+    unsigned long current_time = millis();
+    if (current_time - last_right_press > debounce_delay) {
+        right_button_pressed = true;
+        last_right_press = current_time;
+    }
 }
 
 volatile unsigned long last_page_press = 0;
-const unsigned long debounce_delay = 250;
+
 void buttonPagePressed() {
     unsigned long current_time = millis();
     if (current_time - last_page_press > debounce_delay) {
@@ -109,8 +131,8 @@ void setup() {
     Serial.println("Initializing...");
     configure();
     initBoard(board);
-    sensorSetup();
-    //lcdSetup();
+    //sensorSetup();
+    lcdSetup();bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board)
     boardSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
@@ -150,7 +172,7 @@ void loop() {
         // validate player move
         chessbot::move player_chessbot_move = translate_move_to_coordinates(player_move);
         piece* player_piece = get_piece_at_coordinates(player_chessbot_move.from_x, player_chessbot_move.from_y);
-        bool valid = validate_piece_move(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
+        bool valid = is_move_legal(player_piece, player_chessbot_move.to_x, player_chessbot_move.to_y, board);
         Serial.println(valid);
 
         if (!valid) {
@@ -187,7 +209,7 @@ void loop() {
         piece* ai_piece = get_piece_at_coordinates(ai_chessbot_move.from_x, ai_chessbot_move.from_y);
 
         
-        bool ai_valid = validate_piece_move(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
+        bool ai_valid = is_move_legal(ai_piece, ai_chessbot_move.to_x, ai_chessbot_move.to_y, board);
 
         // update board state
         if (ai_valid) {
@@ -339,7 +361,9 @@ void configure() {
 }
 
 bool check_game_state() {
-    return !game_won;
+    bool white_won = is_checkmate(true, board);
+    bool black_won = is_checkmate(false, board);
+    return white_won || black_won;
 }
 
 piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {
