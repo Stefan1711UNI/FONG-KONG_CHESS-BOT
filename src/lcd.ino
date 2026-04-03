@@ -87,12 +87,6 @@ void lcd_playerMove() {
   lcd.print("Your turn!");
 }
 
-void lcd_wrongMove() {
-  lcd.clear();
-  lcd.print("Error: Move was incomplete.");
-
-}
-
 void lcd_check(){
   lcd.clear();
   lcd.setCursor(0, 0);
