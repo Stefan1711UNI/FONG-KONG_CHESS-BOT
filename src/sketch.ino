@@ -36,9 +36,11 @@ void lcd_moveRejected();
 void lcd_confirmMove(const char* move, bool is_ai_move);
 bool is_move_legal(piece* p, int toX, int toY, std::array<std::array<piece*, 8>, 8> board);
 bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
-
-
-
+void pieceCaptured();
+void lcd_check();
+void lcd_checkMatePlayer();
+void lcd_checkMateAI();
+bool is_in_check(bool isWhite, std::array<std::array<piece*, 8>, 8> board);
 
    
 
@@ -132,7 +134,8 @@ void setup() {
     configure();
     initBoard(board);
     //sensorSetup();
-    lcdSetup();bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board)
+    lcdSetup();
+    bool is_checkmate(bool isWhite, std::array<std::array<piece*, 8>, 8> board)
     boardSetup();
     attachInterrupt(digitalPinToInterrupt(LEFT_BUTTON_PIN), buttonLeftPressed, FALLING);
     attachInterrupt(digitalPinToInterrupt(RIGHT_BUTTON_PIN), buttonRightPressed, FALLING);
@@ -151,12 +154,14 @@ void loop() {
 
         char* player_move = nullptr;
 
+        lcd_playerMove();
+
         if (turn == 0) {
             Serial.println("First loop");
             wait_for_pawns();
             player_confirm = false; 
             player_move = detect_player_move(true, &player_confirm);
-        } else{
+        } else {
             player_confirm = false;
             player_move = detect_player_move(false, &player_confirm);
         }
@@ -176,10 +181,13 @@ void loop() {
         Serial.println(valid);
 
         if (!valid) {
+            lcd_moveRejected();
             Serial.println("Move rejected. Try again.");
             continue; // Go back to the top and let the player try again
         }
-
+        
+        lcd_confirmMove(player_move, false);
+        
         if (get_piece_at_coordinates(player_chessbot_move.to_x, player_chessbot_move.to_y) != nullptr) {
             //pieceCaptured();
         }
@@ -194,7 +202,16 @@ void loop() {
             //     game_won = true;
             //     break;
             // }
-
+            if (is_checkmate(!player_white, board)) {
+            lcd_checkMatePlayer();
+            game_won = true;
+            break;
+            }
+            // Check if AI is in check
+            if (is_in_check(!player_white, board)) {
+                lcd_check();
+                delay(1000);
+            }
 
         //here
         print_internal_board();
@@ -202,9 +219,11 @@ void loop() {
         // get ai move
         Serial.println("AI move");
         char ai_move[5];
+        lcd_aiMove();
         get_ai_move(board, ai_move, player_white ? 1 : 0);
         //showTurn(false);
         Serial.println(ai_move);
+        lcd_confirmMove(ai_move, true);
         chessbot::move ai_chessbot_move = translate_move_to_coordinates(ai_move);
         piece* ai_piece = get_piece_at_coordinates(ai_chessbot_move.from_x, ai_chessbot_move.from_y);
 
@@ -236,6 +255,16 @@ void loop() {
                 //     game_won = true;
                 //     break;
                 // }
+                // Check if player is in check
+            if (is_checkmate(player_white, board)) {
+            lcd_checkMateAI();
+            game_won = true;
+            break;
+            }
+            if (is_in_check(player_white, board)) {
+            lcd_check();
+            delay(1000);
+            }
             }
         } else {
             Serial.println("AI FAILED");
