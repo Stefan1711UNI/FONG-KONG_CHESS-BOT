@@ -528,7 +528,7 @@ bool CoreXYController::capturePiece(String targetSquare) {
 
   //Move into graveyard
   Serial.println("BOARD: Moving to graveyard...");
-  executeCoreXYMovement(graveMM_X, graveMM_Y);
+  executeCoreXYMovement(graveMM_X, targetMM_Y);
 
   //Drop piece
   Serial.println("BOARD: Magnet OFF. Piece eliminated.");

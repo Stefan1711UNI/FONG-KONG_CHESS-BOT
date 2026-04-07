@@ -132,7 +132,7 @@ void setup() {
     Serial.println("Initializing...");
     configure();
     initBoard(board);
-    //sensorSetup();
+    sensorSetup();
     Serial.println("Starting LCD...");
     lcdSetup();
     boardSetup();
@@ -244,10 +244,12 @@ void loop() {
 
         // update board state
         if (ai_valid) {
-            char from[2];
-            char to[2];
+            char from[3];
+            char to[3];
             strncpy(from, ai_move, 2);
+            from[2] = '\0';
             strncpy(to, ai_move + 2, 2);
+            to[2] = '\0';
 
             if (get_piece_at_coordinates(ai_chessbot_move.to_x, ai_chessbot_move.to_y) != nullptr) {
                 pieceCaptured();
@@ -419,7 +421,7 @@ bool check_game_state() {
     return !white_won || black_won;
 }
 
-piece* get_piece_at_coordinates(uint8_t x, uint8_t y) {
+piece* get_piece_at_coordinates(int x, int y) {
     return board[y][x];
 }
 

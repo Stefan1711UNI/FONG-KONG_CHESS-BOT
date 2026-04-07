@@ -125,6 +125,7 @@ char* detect_player_move(bool is_first_turn, volatile bool* playerEndedTurn = nu
                 was_lifted[r][c] = true;
             }
         }
+      delay(50);
     }
 
     lastMove = get_changed_position();  
@@ -295,7 +296,9 @@ byte readPCF(byte addr) {
 
 void sensorSetup() {
   Wire.begin();
-  Serial.begin(9600);
+  //Serial.begin(9600);
+  Wire.setClock(10000);
+  Wire.setTimeout(3000);
   delay(2000);
 
   for (int i = 0; i < 8; i++) {
