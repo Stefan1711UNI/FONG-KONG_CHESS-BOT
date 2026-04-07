@@ -257,10 +257,15 @@ bool stillMoving() {}
 
 void readSensors() {
   for (int row = 0; row < 8; row++) {
-    byte rowData = readPCF(PCF_ADDRS[row]);
+    int rowData = readPCF(PCF_ADDRS[row]);
 
-    for (int col = 0; col < 8; col++) {
-      sensorBoard[row][col] = !(rowData & (1 << col));
+    if (rowData != -1) {
+      for (int col = 0; col < 8; col++) {
+        sensorBoard[row][col] = !(rowData & (1 << col));
+      }
+    } else {
+      Serial.print("I2C Glitch safely ignored on Row: ");
+      Serial.println(row);
     }
   }
 
@@ -289,9 +294,11 @@ void writePCF(byte addr, byte value) {
 }
 
 byte readPCF(byte addr) {
-  Wire.requestFrom(addr, (byte)1);
-  if (Wire.available()) return Wire.read();
-  return 0xFF;
+  byte bytesRead = Wire.requestFrom(addr, (byte)1);
+  if (bytesRead > 0 && Wire.available()) {
+    return Wire.read();
+  }
+ return -1;
 }
 
 void sensorSetup() {
