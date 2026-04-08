@@ -91,8 +91,8 @@ arduino-cli compile --profile default sketch/
 arduino-cli upload --profile default -p /dev/ttyACM0 sketch/
 
 ```
-
-📁 Project Structure
+---
+###📁 Project Structure
 sketch.ino              # Main loop
 ai.ino                  # Chess AI (micro-Max)
 chess_logic.ino         # Rules & validation
@@ -101,25 +101,25 @@ sensors.ino             # Sensor system
 lcd.ino                 # Display UI
 types.h                 # Data structures
 
-👥 Team
+###👥 Team
 Stefan Sonderling — Hardware & Team Lead
 Jan Adamski — Software & Integration
 Kamyab Rayganshirazinejad — AI Logic
 Diogo Alves — Electronics & Integration
 
-💡 Challenges
+###💡 Challenges
 Integration between hardware and software proved to be complex
 The sensor system required redesign (2 → 8 I2C expanders)
 Hardware instability required multiple adjustments
 Ensuring reliable full-system performance was difficult
 
-🔮 Future Improvements
+###🔮 Future Improvements
 Improve movement accuracy
 Replace wiring with a custom PCB
 Reintroduce audio system
 Enhance AI strength
 
-💭 Final Thoughts
+###💭 Final Thoughts
 
 This project combines hardware, embedded systems, and AI into one complete system.
 
