@@ -123,4 +123,7 @@ Enhance AI strength
 
 This project combines hardware, embedded systems, and AI into one complete system.
 
+📄 Full documentation:[FONG-KONG CHESS-BOT.docx](https://github.com/user-attachments/files/26578340/FONG-KONG.CHESS-BOT.docx)
+
+
 Although the system is not perfect, it successfully plays a full game of chess autonomously on a physical board, demonstrating the successful integration of multiple complex subsystems into a single working product.
