@@ -91,40 +91,49 @@ arduino-cli compile --profile default sketch/
 arduino-cli upload --profile default -p /dev/ttyACM0 sketch/
 
 ```
+## 📁 Project Structure
+
+
+sketch.ino # Main loop
+ai.ino # Chess AI (micro-Max)
+chess_logic.ino # Rules & validation
+CoreXYController.ino # Movement control
+sensors.ino # Sensor system
+lcd.ino # Display UI
+types.h # Data structures
+
+
 ---
-📁 Project Structure
-sketch.ino              # Main loop
-ai.ino                  # Chess AI (micro-Max)
-chess_logic.ino         # Rules & validation
-CoreXYController.ino    # Movement control
-sensors.ino             # Sensor system
-lcd.ino                 # Display UI
-types.h                 # Data structures
 
-👥 Team
-Stefan Sonderling — Hardware & Team Lead
-Jan Adamski — Software & Integration
-Kamyab Rayganshirazinejad — AI Logic
-Diogo Alves — Electronics & Integration
+## 👥 Team
 
-💡 Challenges
-Integration between hardware and software proved to be complex
-The sensor system required redesign (2 → 8 I2C expanders)
-Hardware instability required multiple adjustments
-Ensuring reliable full-system performance was difficult
+- Stefan Sonderling — Hardware & Team Lead  
+- Jan Adamski — Software & Integration  
+- Kamyab Rayganshirazinejad — AI Logic  
+- Diogo Alves — Electronics & Integration  
 
-🔮 Future Improvements
-Improve movement accuracy
-Replace wiring with a custom PCB
-Reintroduce audio system
-Enhance AI strength
+---
 
-💭 Final Thoughts
+## 💡 Challenges
+
+- Integration between hardware and software proved to be complex  
+- The sensor system required redesign (2 → 8 I2C expanders)  
+- Hardware instability required multiple adjustments  
+- Ensuring reliable full-system performance was difficult  
+
+---
+
+## 🔮 Future Improvements
+
+- Improve movement accuracy  
+- Replace wiring with a custom PCB  
+- Reintroduce audio system  
+- Enhance AI strength  
+
+---
+
+## 💭 Final Thoughts
 
 This project combines hardware, embedded systems, and AI into one complete system.
 
-
 Although the system is not perfect, it successfully plays a full game of chess autonomously on a physical board, demonstrating the successful integration of multiple complex subsystems into a single working product.
-
-
-📄 Full documentation:[FONG-KONG CHESS-BOT.docx](https://github.com/user-attachments/files/26578340/FONG-KONG.CHESS-BOT.docx)
