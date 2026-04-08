@@ -94,13 +94,13 @@ arduino-cli upload --profile default -p /dev/ttyACM0 sketch/
 ## 📁 Project Structure
 
 
-sketch.ino # Main loop
-ai.ino # Chess AI (micro-Max)
-chess_logic.ino # Rules & validation
-CoreXYController.ino # Movement control
-sensors.ino # Sensor system
-lcd.ino # Display UI
-types.h # Data structures
+- sketch.ino # Main loop
+- ai.ino # Chess AI (micro-Max)
+- chess_logic.ino # Rules & validation
+- CoreXYController.ino # Movement control
+- sensors.ino # Sensor system
+- lcd.ino # Display UI
+- types.h # Data structures
 
 
 ---
