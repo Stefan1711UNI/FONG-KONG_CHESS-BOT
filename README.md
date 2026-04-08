@@ -79,6 +79,7 @@ A hidden XY gantry moves under the board. An electromagnet attaches to pieces an
    
 ### Installation
 
+```bash
 arduino-cli core install arduino:zephyr
 
 arduino-cli lib install MsgPack@0.4.2
@@ -88,6 +89,8 @@ arduino-cli lib install "ArxTypeTraits@0.3.1"
 Compile & Upload
 arduino-cli compile --profile default sketch/
 arduino-cli upload --profile default -p /dev/ttyACM0 sketch/
+
+```
 
 📁 Project Structure
 sketch.ino              # Main loop
