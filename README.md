@@ -78,7 +78,7 @@ A hidden XY gantry moves under the board. An electromagnet attaches to pieces an
 
 ### Installation
 
-
+```bash
 arduino-cli core install arduino:zephyr
 
 arduino-cli lib install MsgPack@0.4.2
@@ -115,4 +115,4 @@ Enhance AI strength
 
 This project combines hardware, embedded systems, and AI into one complete system.
 
-It successfully plays a full game of chess autonomously on a physical board, demonstrating the successful integration of multiple complex subsystems into a single working product.
+Although the system is not perfect, it successfully plays a full game of chess autonomously on a physical board, demonstrating the successful integration of multiple complex subsystems into a single working product.
