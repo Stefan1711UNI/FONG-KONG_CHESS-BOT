@@ -4,6 +4,10 @@ An autonomous robotic chessboard powered by Arduino, designed to combine artific
 
 This project allows a player to play chess alone while an AI opponent moves the pieces automatically — creating a “magical” experience where the board plays against the user.
 
+[▶️ Click here to watch the hardware prototype in action!](https://youtu.be/yVv4TGLpX0w)
+
+![Hardware Setup](../media/Finished_assembly.jpg)
+
 ---
 
 ## 🚀 Overview
@@ -126,7 +130,7 @@ arduino-cli upload --profile default -p /dev/ttyACM0 sketch/
 ## 🔮 Future Improvements
 
 - Improve movement accuracy  
-- Replace wiring with a custom PCB  
+- Replace the current breadboard/CNC shield wiring with a custom PCB. (In development for   version 2.0)
 - Reintroduce audio system  
 - Enhance AI strength  
 
